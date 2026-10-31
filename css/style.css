@@ -1,4 +1,5 @@
 *,*::before,*::after{box-sizing:border-box}
+html{scrollbar-gutter:stable} /* ruimte voor de scrollbalk altijd vrijhouden, zodat de pagina niet verspringt */
 body{margin:0}
 [hidden]{display:none!important}
 
