@@ -22,7 +22,7 @@
 (function(){
 "use strict";
 const $app=document.getElementById('app');
-const OWL='<svg class="owl" viewBox="0 0 48 48" aria-hidden="true"><path d="M9 8l8 7h14l8-7v22c0 9-7 15-15 15S9 39 9 30z" fill="currentColor" opacity=".16"/><path d="M9 8l8 7h14l8-7v22c0 9-7 15-15 15S9 39 9 30z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="18" cy="24" r="6.5" fill="var(--accent)"/><circle cx="30" cy="24" r="6.5" fill="var(--accent)"/><circle cx="18" cy="24" r="2.6" fill="var(--night)"/><circle cx="30" cy="24" r="2.6" fill="var(--night)"/><path d="M22 31l2 3 2-3z" fill="var(--accent)"/></svg>';
+const OWL='<img class="owl" src="img/uil.png" alt="Logo Genneps Gewiekste">';
 
 const DEF={naam:'Genneps Gewiekste',editie:'Nieuwe editie',jury:3,rubrieken:[
   {id:'sp',naam:'Sponsorrubriek',soort:'sponsor',vragen:7,max:1000},
