@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// BEVEILIGINGSREGELS VOOR FIREBASE
+// Plak dit in de Firebase-console: Firestore Database -> tabblad "Regels" -> Publiceren.
+//
+// - De beheerder (e-mail hieronder) mag alles.
+// - Bestuursleden op de lijst beheer/toegang mogen vragen en scores invullen
+//   en alles lezen, maar teams, jokers en instellingen niet wijzigen.
+// - Iedereen anders mag niets.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function ingelogd() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function isBeheerder() {
+      // Zelfde adres als "beheerder" in js/firebase-config.js (kleine letters)
+      return ingelogd() && request.auth.token.email.lower() == 'sjuulhofmans@gmail.com';
+    }
+    function isBestuur() {
+      return isBeheerder() || (ingelogd()
+        && exists(/databases/$(database)/documents/beheer/toegang)
+        && request.auth.token.email.lower() in get(/databases/$(database)/documents/beheer/toegang).data.emails);
+    }
+
+    match /beheer/{doc} {
+      allow read: if isBestuur();
+      allow write: if isBeheerder();
+    }
+    match /vragen/{rubriek} {
+      allow read, write: if isBestuur();
+    }
+    match /scores/{rubriek} {
+      allow read, write: if isBestuur();
+    }
+  }
+}
