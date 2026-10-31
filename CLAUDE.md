@@ -14,6 +14,7 @@ Invul- en nakijkapp voor de stadskwis Genneps Gewiekste (Gennep). In Gennep zegg
 - `js/app.js` bouwt de hele pagina opnieuw op via `render()` uit de toestand `S`; klikken en invoer lopen via `data-act`-attributen.
 
 ## Belangrijke regels
+- **Na elke afgeronde wijziging: altijd committen én pushen** naar GitHub (`git push origin main`), zonder het eerst te vragen (gebruikerswens 2026-10). De online versie (GitHub Pages, https://sjuulhofmans-stack.github.io/gewiekste/) komt uit `main`.
 - Alles wordt direct opgeslagen; nooit een opslaan-knop toevoegen.
 - Alle invulregels hebben overal precies dezelfde hoogte en breedte (tokens `--row`, `--rowT` in `css/style.css`).
 - Gebruikers zijn deels ouder en niet snel: grote knoppen, duidelijke Nederlandse teksten, vaste plekken.
