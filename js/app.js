@@ -150,7 +150,7 @@ const dis=()=>S.canWrite&&S.dbOk?'':' disabled';
 /* ---------- Nakijken ---------- */
 function vNakijken(){ensureRid();const r=rub(S.rid);const T=teams();
   let h=`<div class="toolbar">${rubSelect()}<div class="seg" role="group" aria-label="Weergave"><button data-act="mode" data-m="raster" aria-pressed="${S.mode!=='team'}">Alle teams (raster)</button><button data-act="mode" data-m="team" aria-pressed="${S.mode==='team'}">Per team</button></div>
-  <p class="hint">Typ een getal, of <kbd>g</kbd> = goed (alle punten) en <kbd>f</kbd> = fout (0). Met <kbd>Enter</kbd> ga je naar de volgende regel.</p></div>`;
+  <p class="hint">Typ een getal, of <kbd>g</kbd> = goed (alle punten) en <kbd>f</kbd> = fout (0). Met <kbd>Enter</kbd> ga je naar de volgende regel, met de <kbd>pijltjes</kbd> naar elk vakje.</p></div>`;
   if(!T.length)return h+empty('Er zijn nog geen teams','De beheerder maakt de teams aan onder Teams. Daarna verschijnen ze hier.');
   return h+(S.mode==='team'?perTeam(r,T):raster(r,T))}
 
@@ -297,10 +297,19 @@ function commitScore(el){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.datase
 function nextScoreInput(el){const all=[...$app.querySelectorAll('input[data-act="score"]')];
   const list=el.classList.contains('gi')?all.filter(x=>x.dataset.nr===el.dataset.nr&&x.classList.contains('gi')):all;
   const i=list.indexOf(el);return list[i+1]||null}
+// pijltjestoetsen: in het raster omhoog/omlaag binnen de teamkolom, links/rechts binnen de regel; per team gewoon vorige/volgende
+function arrowScoreInput(el,key){const all=[...$app.querySelectorAll('input[data-act="score"]')];
+  const grid=el.classList.contains('gi');const vert=key==='ArrowUp'||key==='ArrowDown';const d=key==='ArrowUp'||key==='ArrowLeft'?-1:1;
+  const list=!grid?all:vert?all.filter(x=>x.dataset.nr===el.dataset.nr&&x.classList.contains('gi')):[...el.closest('tr').querySelectorAll('input[data-act="score"]')];
+  return list[list.indexOf(el)+d]||null}
 function curVraag(rid,q){return clone(vragen(rid)[q-1])}
 
 $app.addEventListener('input',e=>{const el=e.target;if(el.id)dirty.add(el.id)});
-$app.addEventListener('keydown',e=>{const el=e.target;if(e.key!=='Enter'||el.tagName==='TEXTAREA')return;
+$app.addEventListener('keydown',e=>{const el=e.target;
+  if(el.dataset.act==='score'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)&&!e.shiftKey&&!e.ctrlKey&&!e.altKey){
+    e.preventDefault();const nx=arrowScoreInput(el,e.key);if(!nx)return;const ok=commitScore(el);
+    if(ok){S.pf=nx.id;if(!raf){nx.focus();nx.select()}}return}
+  if(e.key!=='Enter'||el.tagName==='TEXTAREA')return;
   if(el.dataset.act==='score'){e.preventDefault();const nx=nextScoreInput(el);const ok=commitScore(el);
     if(ok&&nx){S.pf=nx.id;if(!raf){nx.focus();nx.select()}}return}
   if(el.tagName==='INPUT'){e.preventDefault();el.blur()}});
