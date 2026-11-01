@@ -42,15 +42,18 @@ button,select,input,textarea{font:inherit;color:inherit}
 
 /* kopband */
 .band{background:var(--night);color:var(--night-ink);position:sticky;top:0;z-index:20} /* kopband blijft bovenin staan bij scrollen */
-.top{display:flex;align-items:center;justify-content:space-between;gap:12px 20px;flex-wrap:wrap;padding-block:16px 12px}
-.brand{display:flex;align-items:center;gap:12px;min-width:0}
-.owl{width:44px;height:44px;flex:none;object-fit:contain}
+/* links het logo, rechts daarvan twee regels: status/uitloggen en daaronder de tabbladen */
+.top{display:flex;align-items:stretch;gap:8px 28px;flex-wrap:wrap;padding-top:12px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0;padding-bottom:12px}
+.owl{width:72px;height:72px;flex:none;object-fit:contain}
+.head-r{flex:1 1 520px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
+.head-r .top-right{justify-content:flex-end}
 .brand h1{font-size:1.4rem;font-weight:800}
 .brand p{margin:0;font-size:.9rem;opacity:.75}
 .top-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .role{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent)}
 .status{font-size:.9rem;opacity:.85;min-width:9ch}
-.tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end;padding-block:4px 0}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end}
 .tab{border:0;background:transparent;color:var(--night-ink);opacity:.78;font-weight:700;padding:11px 16px;border-radius:9px 9px 0 0;cursor:pointer;min-height:44px}
 .tab:hover{opacity:1;background:color-mix(in srgb,var(--night-ink) 10%,transparent)}
 .tab[aria-current="page"]{background:var(--bg);color:var(--ink);opacity:1}

@@ -24,7 +24,7 @@
 const $app=document.getElementById('app');
 const OWL='<img class="owl" src="img/uil.png" alt="Logo Genneps Gewiekste">';
 
-const DEF={naam:'Genneps Gewiekste',editie:'Nieuwe editie',jury:3,rubrieken:[
+const DEF={naam:'Genneps Gewiekste',editie:'6e editie',jury:3,rubrieken:[
   {id:'sp',naam:'Sponsorrubriek',soort:'sponsor',vragen:7,max:1000},
   ...Array.from({length:10},(_,i)=>({id:'r'+(i+1),naam:'Rubriek '+(i+1),soort:'normaal',vragen:7,max:1000})),
   {id:'gh',naam:'Geheime opdracht',soort:'geheim',vragen:1,max:1000}
@@ -130,8 +130,8 @@ function header(){const c=cfg();
   const role=S.backend==='lokaal'?'Lokaal testen':S.isOwner?'Beheerder':(S.dbOk&&S.canWrite?'Bestuurslid':'Alleen lezen');
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
-  <div class="top-right"><span class="role">${role}</span><span id="status" class="status" aria-live="polite">${statusTxt()}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div></div>
-  ${S.needLogin?'':`<nav class="wrap tabs" aria-label="Onderdelen">`}${S.needLogin?'':TABS.map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</header>`}
+  <div class="head-r"><div class="top-right"><span class="role">${role}</span><span id="status" class="status" aria-live="polite">${statusTxt()}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
+  ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':TABS.map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
 function notices(){let h='';
   if(S.backend==='lokaal')h+='<div class="notice"><b>Lokaal testen.</b> Firebase is nog niet ingesteld (js/firebase-config.js). Alles wordt alleen in deze browser bewaard.</div>';
   if(S.noAccess)h+=`<div class="notice bad"><b>Nog geen toegang.</b> Je bent ingelogd als ${esc(S.email)}, maar dit adres staat nog niet op de lijst. Vraag de beheerder om je e-mailadres toe te voegen. Daarna herlaad je de pagina.</div>`;
