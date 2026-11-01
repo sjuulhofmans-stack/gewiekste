@@ -157,11 +157,11 @@ function vNakijken(){ensureRid();const r=rub(S.rid);const T=teams();
 function scoreInput(pre,r,t,v,g,j,extra){const x=raw(r.id,t.nr,g.id);
   let val='';if(j){if(x&&typeof x==='object'&&typeof x['j'+j]==='number')val=x['j'+j]}else if(typeof x==='number')val=x;
   const id=`${pre}_${r.id}_${t.nr}_${g.id}${j?'_j'+j:''}`;
-  return `<input class="${extra}" id="${id}" data-act="score" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${j?` data-j="${j}"`:''} data-max="${g.punten}" inputmode="numeric" autocomplete="off" value="${val}" aria-label="${esc(teamLabel(t))}, ${esc(g.tekst||v.titel||'regel')}${j?', jury '+j:''}"${dis()}>`}
+  return `<input class="${extra}" id="${id}" data-act="score" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${j?` data-j="${j}"`:''} data-max="${g.punten}" inputmode="numeric" autocomplete="off" value="${val}" aria-label="Team ${t.nr}, ${esc(g.tekst||v.titel||'regel')}${j?', jury '+j:''}"${dis()}>`}
 
 function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='normaal';const pc=code(r);
   let h=`<div class="grid-wrap"><table class="grid"><colgroup><col class="w1"><col class="w2"><col class="w3">${T.map(()=>'<col class="wt">').join('')}</colgroup>
-  <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th>${T.map(t=>`<th class="ct" title="${esc(teamLabel(t))}"><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span><span class="tnm">${esc(t.naam||'')}</span></th>`).join('')}</tr></thead><tbody>`;
+  <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th>${T.map(t=>`<th class="ct" title="Team ${t.nr}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
   V.forEach((v,i)=>{
     h+=`<tr class="rq"><td class="stk c1">${pc}.${i+1}</td><td class="stk c2 tl" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</td><td class="stk c3">${v.punten}</td>${T.map(t=>`<td>${fmt(vraagScore(r.id,t.nr,v))}</td>`).join('')}</tr>`;
     v.regels.forEach((g,k)=>{const L=lab(v,k);
@@ -180,7 +180,7 @@ function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='no
 function perTeam(r,T){if(!T.some(t=>t.nr===S.team))S.team=T[0].nr;const t=T.find(x=>x.nr===S.team);const idx=T.indexOf(t);
   const V=vragen(r.id);const J=jury();const isJ=jokerOf(t.nr)===r.id;const[d,a]=progress(r.id,t.nr);const pc=code(r);
   let h=`<div class="teambar"><button class="btn" data-act="team-prev"${idx===0?' disabled':''} aria-label="Vorig team">◀ Vorige</button>
-  <select id="teamsel" class="inp sel-team" data-act="teamsel" aria-label="Kies team">${T.map(x=>`<option value="${x.nr}"${x.nr===t.nr?' selected':''}>${esc(teamLabel(x))}</option>`).join('')}</select>
+  <select id="teamsel" class="inp sel-team" data-act="teamsel" aria-label="Kies team">${T.map(x=>`<option value="${x.nr}"${x.nr===t.nr?' selected':''}>Team ${x.nr}</option>`).join('')}</select>
   <button class="btn" data-act="team-next"${idx===T.length-1?' disabled':''} aria-label="Volgend team">Volgende ▶</button>
   <span class="badge ${d===a?'ok':'warn'}">${d} van ${a} ingevuld</span>${isJ?'<span class="badge joker">★ Joker: deze rubriek telt dubbel</span>':''}</div>`;
   V.forEach((v,i)=>{const vs=vraagScore(r.id,t.nr,v);
