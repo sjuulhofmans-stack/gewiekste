@@ -143,13 +143,13 @@ function vLogin(){return `<div class="login">${OWL}<h2>Welkom bij de uitslagen</
 function view(){if(S.needLogin)return vLogin();if(S.noAccess)return '';let t=S.tab;if(BTABS.some(x=>x[0]===t)&&!S.isOwner)t='nakijken';
   return({nakijken:vNakijken,vragen:vVragen,overzicht:vOverzicht,uitslag:vUitslag,teams:vTeams,jokers:vJokers,instellingen:vInst}[t]||vNakijken)()}
 function empty(t,p){return `<div class="empty"><h3>${t}</h3><p>${p}</p></div>`}
-function rubChips(){ensureRid();return `<div class="rubs" role="group" aria-label="Kies een rubriek">${rubs().map(r=>`<button class="rub" data-act="rub" data-rid="${r.id}" aria-pressed="${r.id===S.rid}"><b>${code(r)}</b>${esc(r.naam)}</button>`).join('')}</div>`}
+// rubriekkeuze: één uitklapmenu in plaats van een rij knoppen
+function rubSelect(){ensureRid();return `<label class="rubsel"><span>Rubriek</span><select class="inp sel-rub" id="rubsel" data-act="rub">${rubs().map(r=>`<option value="${r.id}"${r.id===S.rid?' selected':''}>${code(r)} · ${esc(r.naam)}</option>`).join('')}</select></label>`}
 const dis=()=>S.canWrite&&S.dbOk?'':' disabled';
 
 /* ---------- Nakijken ---------- */
 function vNakijken(){ensureRid();const r=rub(S.rid);const T=teams();
-  let h=rubChips();
-  h+=`<div class="toolbar"><div class="seg" role="group" aria-label="Weergave"><button data-act="mode" data-m="raster" aria-pressed="${S.mode!=='team'}">Alle teams (raster)</button><button data-act="mode" data-m="team" aria-pressed="${S.mode==='team'}">Per team</button></div>
+  let h=`<div class="toolbar">${rubSelect()}<div class="seg" role="group" aria-label="Weergave"><button data-act="mode" data-m="raster" aria-pressed="${S.mode!=='team'}">Alle teams (raster)</button><button data-act="mode" data-m="team" aria-pressed="${S.mode==='team'}">Per team</button></div>
   <p class="hint">Typ een getal, of <kbd>g</kbd> = goed (alle punten) en <kbd>f</kbd> = fout (0). Met <kbd>Enter</kbd> ga je naar de volgende regel.</p></div>`;
   if(!T.length)return h+empty('Er zijn nog geen teams','De beheerder maakt de teams aan onder Teams. Daarna verschijnen ze hier.');
   return h+(S.mode==='team'?perTeam(r,T):raster(r,T))}
@@ -206,7 +206,7 @@ function regelBadge(rs,p){if(!p)return '<span class="badge warn">Vul eerst de pu
   if(rs===p)return `<span class="badge ok">Regels samen ${rs} / ${p} ✓</span>`;
   return `<span class="badge ${rs>p?'bad':'warn'}">Regels samen ${rs} / ${p}</span>`}
 function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som=V.reduce((s,v)=>s+v.punten,0);const max=+r.max||1000;const pc=code(r);const d=dis();
-  let h=rubChips()+`<div class="rhead"><div><h2>${pc} · ${esc(r.naam)}</h2><p class="mut">${V.length} ${V.length===1?'opdracht':'vragen en opdrachten'} · samen maximaal ${max} punten</p></div>${somBadge(som,max)}</div>`;
+  let h=`<div class="toolbar">${rubSelect()}</div>`+`<div class="rhead"><div><h2>${pc} · ${esc(r.naam)}</h2><p class="mut">${V.length} ${V.length===1?'opdracht':'vragen en opdrachten'} · samen maximaal ${max} punten</p></div>${somBadge(som,max)}</div>`;
   V.forEach((v,i)=>{const q=i+1;const rs=v.regels.reduce((s,g)=>s+g.punten,0);const base=`data-rid="${r.id}" data-q="${q}"`;
     const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('')}</select>`;
     h+=`<section class="qcard"><div class="ehead"><span class="qc">${pc}.${q}</span>
@@ -307,6 +307,7 @@ $app.addEventListener('keydown',e=>{const el=e.target;if(e.key!=='Enter'||el.tag
 $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!a)return;dirty.delete(el.id);const v=el.value;
   if(a==='score'){commitScore(el);return}
   if(a==='toegang'){const list=[...new Set(v.split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@')))];saveToegang(list);toast(list.length+' adressen hebben toegang.');return}
+  if(a==='rub'){S.rid=v;store('gg_rid',v);render();return}
   if(a==='teamsel'){S.team=+v;store('gg_team',v);schedule();return}
   if(a==='vf'){const q=+el.dataset.q,rid=el.dataset.rid;const o=curVraag(rid,q);const f=el.dataset.f;
     if(f==='punten')o.punten=num(v);else o[f]=v;saveVraag(rid,q,o);return}
@@ -322,7 +323,6 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='login'){const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});firebase.auth().signInWithPopup(p).catch(e=>{if(e&&e.code!=='auth/popup-closed-by-user')toast('Inloggen lukte niet: '+(e.message||e.code),true)});return}
   if(a==='logout'){firebase.auth().signOut().then(()=>location.reload());return}
   if(a==='tab'){S.tab=el.dataset.tab;try{history.replaceState(null,'','#'+S.tab)}catch(x){}render();window.scrollTo(0,0);return}
-  if(a==='rub'){S.rid=el.dataset.rid;store('gg_rid',S.rid);render();return}
   if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
   if(a==='team-prev'||a==='team-next'){const T=teams();const i=T.findIndex(t=>t.nr===S.team)+(a==='team-next'?1:-1);if(T[i]){S.team=T[i].nr;store('gg_team',S.team)}render();window.scrollTo(0,0);return}
   if(a==='set'){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.dataset.rg,val=+el.dataset.v;if(raw(rid,nr,rg)!==val)saveScore(rid,nr,rg,val);return}
