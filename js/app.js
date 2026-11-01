@@ -26,7 +26,7 @@ const OWL='<img class="owl" src="img/uil.png" alt="Logo Genneps Gewiekste">';
 
 const DEF={naam:'Genneps Gewiekste',editie:'6e editie',jury:3,rubrieken:[
   {id:'sp',naam:'Sponsorrubriek',soort:'sponsor',vragen:7,max:1000},
-  ...Array.from({length:10},(_,i)=>({id:'r'+(i+1),naam:'Rubriek '+(i+1),soort:'normaal',vragen:7,max:1000})),
+  ...Array.from({length:10},(_,i)=>({id:'r'+(i+1),naam:'Rubriek '+(i+2),soort:'normaal',vragen:7,max:1000})),
   {id:'gh',naam:'Geheime opdracht',soort:'geheim',vragen:1,max:1000}
 ]};
 const TABS=[['nakijken','Nakijken'],['vragen','Vragen & antwoorden'],['overzicht','Totaaloverzicht'],['uitslag','Uitslag']];
@@ -52,11 +52,12 @@ function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function cfg(){return S.config||DEF}
 function rubs(){return Array.isArray(cfg().rubrieken)?cfg().rubrieken:DEF.rubrieken}
 function rub(id){return rubs().find(r=>r.id===id)}
-function code(r){if(!r)return'?';if(r.soort==='sponsor')return'S';if(r.soort==='geheim')return'G';let n=0;for(const x of rubs()){if(x.soort==='normaal'){n++;if(x.id===r.id)return String(n)}}return'?'}
+// rubrieknummer: de sponsorrubriek telt mee (die is rubriek 1), de geheime opdracht is G
+function code(r){if(!r)return'?';if(r.soort==='geheim')return'G';let n=0;for(const x of rubs()){if(x.soort!=='geheim'){n++;if(x.id===r.id)return String(n)}}return'?'}
 function jury(){return Math.max(1,Math.min(6,+cfg().jury||3))}
 function teams(){return Object.entries(S.teams||{}).map(([nr,naam])=>({nr:+nr,naam:String(naam||'')})).filter(t=>t.nr>0).sort((a,b)=>a.nr-b.nr)}
 function teamLabel(t){return 'Team '+t.nr+(t.naam?' – '+t.naam:'')}
-function ensureRid(){if(!rub(S.rid))S.rid=(rubs().find(r=>r.soort==='normaal')||rubs()[0]||{}).id}
+function ensureRid(){if(!rub(S.rid))S.rid=(rubs()[0]||{}).id}
 
 function defVraag(i){return{titel:'',punten:0,soort:'antwoord',nummering:'enkel',regels:[{id:'v'+i+'r1',tekst:'',punten:0}]}}
 function norm(v,i){if(!v||typeof v!=='object')return defVraag(i);
