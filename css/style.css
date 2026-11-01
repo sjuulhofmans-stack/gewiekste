@@ -43,8 +43,8 @@ button,select,input,textarea{font:inherit;color:inherit}
 /* kopband */
 .band{background:var(--night);color:var(--night-ink);position:sticky;top:0;z-index:20} /* kopband blijft bovenin staan bij scrollen */
 /* links het logo, rechts daarvan twee regels: status/uitloggen en daaronder de tabbladen */
-.top{display:flex;align-items:stretch;gap:8px 28px;flex-wrap:wrap;padding-top:12px}
-.brand{display:flex;align-items:center;gap:14px;min-width:0;padding-bottom:12px}
+.top{display:flex;align-items:stretch;gap:8px 28px;flex-wrap:wrap;padding-block:12px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
 .owl{width:72px;height:72px;flex:none;object-fit:contain}
 .head-r{flex:1 1 520px;min-width:0;display:flex;flex-direction:column;justify-content:space-between;gap:6px}
 .head-r .top-right{justify-content:flex-end}
@@ -53,11 +53,12 @@ button,select,input,textarea{font:inherit;color:inherit}
 .top-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .role{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent)}
 .status{font-size:.9rem;opacity:.85;min-width:9ch}
-.tabs{display:flex;flex-wrap:wrap;gap:4px;align-items:flex-end}
-.tab{border:0;background:transparent;color:var(--night-ink);opacity:.78;font-weight:700;padding:11px 16px;border-radius:9px 9px 0 0;cursor:pointer;min-height:44px}
-.tab:hover{opacity:1;background:color-mix(in srgb,var(--night-ink) 10%,transparent)}
-.tab[aria-current="page"]{background:var(--bg);color:var(--ink);opacity:1}
-.tabsep{width:1px;height:26px;background:color-mix(in srgb,var(--night-ink) 30%,transparent);margin:0 8px 9px}
+/* tabbladen als losse knoppen; het actieve tabblad is licht gevuld */
+.tabs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tab{border:1px solid color-mix(in srgb,var(--night-ink) 28%,transparent);background:color-mix(in srgb,var(--night-ink) 8%,transparent);color:var(--night-ink);font-weight:700;padding:9px 16px;border-radius:9px;cursor:pointer;min-height:44px}
+.tab:hover{background:color-mix(in srgb,var(--night-ink) 18%,transparent)}
+.tab[aria-current="page"]{background:var(--night-ink);color:var(--night);border-color:var(--night-ink)}
+.tabsep{width:1px;height:26px;background:color-mix(in srgb,var(--night-ink) 30%,transparent);margin:0 6px}
 .tab .lock{font-size:.8em;opacity:.7;margin-right:4px}
 
 .main{display:flex;flex-direction:column;gap:18px;padding-block:22px 64px}
