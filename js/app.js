@@ -88,7 +88,7 @@ function ranking(){const L=teams().map(t=>({...t,tot:teamTot(t.nr),crea:creaTot(
 
 /* ---------- opslaan ---------- */
 function setStatus(){const el=document.getElementById('status');if(el)el.textContent=statusTxt()}
-function statusTxt(){if(S.needLogin)return'Niet ingelogd';if(S.noAccess)return'Geen toegang';if(S.saving>0)return'Opslaan…';if(S.backend==='lokaal')return'Opgeslagen op deze computer ✓';if(S.saving>0)return'Opslaan…';return S.fresh?'Alles opgeslagen ✓':'Laden…'}
+function statusTxt(){if(S.needLogin)return'Niet ingelogd';if(S.noAccess)return'Geen toegang';if(S.saving>0)return'Opslaan…';if(S.backend==='lokaal')return'Opgeslagen op deze computer ✓';if(S.saving>0)return'Opslaan…';return S.fresh?'':'Laden…'}
 function enqueue(path,fn){if(!db)return;S.saving++;setStatus();
   Q[path]=(Q[path]||Promise.resolve()).then(fn).catch(onErr).finally(()=>{S.saving--;setStatus()})}
 function onErr(e){const c=e&&e.code;
