@@ -216,7 +216,7 @@ function regelBadge(rs,p){if(!p)return '<span class="badge warn">Vul eerst de pu
   if(rs===p)return `<span class="badge ok">Regels samen ${rs} / ${p} ✓</span>`;
   return `<span class="badge ${rs>p?'bad':'warn'}">Regels samen ${rs} / ${p}</span>`}
 function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som=V.reduce((s,v)=>s+v.punten,0);const max=+r.max||1000;const pc=code(r);const d=dis();
-  let h=`<div class="toolbar">${rubSelect()}</div>`+`<div class="rhead"><div><h2>${pc} · ${esc(r.naam)}</h2></div>${somBadge(som,max)}</div>`;
+  let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}</div>`;
   V.forEach((v,i)=>{const q=i+1;const rs=v.regels.reduce((s,g)=>s+g.punten,0);const base=`data-rid="${r.id}" data-q="${q}"`;
     const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('')}</select>`;
     h+=`<section class="qcard"><div class="ehead"><span class="qc">${pc}.${q}</span>
