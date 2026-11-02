@@ -19,7 +19,7 @@ body{margin:0}
   --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --font-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
   --row:40px; --rowT:52px;
-  --w1:64px; --w2:330px; --w3:84px; --wt:68px;
+  --w1:64px; --w2:330px; --w2min:330px; --w3:84px; --wt:68px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F141D; --surface:#1D2738; --surface-2:#2A3650; --line:#435572;
@@ -33,7 +33,7 @@ body{margin:0}
   --accent:#E3A23F; --accent-ink:#1A1206; --accent-soft:#3A2B12;
   --good:#63C28E; --good-soft:#163024; --bad:#E57373; --bad-soft:#3B1D1F; --warn:#E8B64C; --warn-soft:#33290F;
   --joker:#B898F2; --joker-soft:#2A2141; color-scheme:dark;}
-@media (max-width:700px){:root{--w1:48px;--w2:150px;--w3:64px;--wt:60px}}
+@media (max-width:700px){:root{--w1:48px;--w2:150px;--w2min:150px;--w3:64px;--wt:60px}}
 
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--font-body)}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--night)}
@@ -137,8 +137,11 @@ col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{w
 .grid tfoot tr.trow.solo td{bottom:0}
 .grid tfoot .stk{z-index:6}
 /* kleuren van de nakijktabel (raster) */
-.grid-wrap.nk{background:var(--nk-cell);border-color:var(--nk-line);width:max-content;max-width:100%}
-.grid.nk{color:var(--nk-ink)}
+/* volle breedte: teamkolommen houden vaste breedte, de vraagkolom vult de rest op (minimaal --w2).
+   De hoogte wordt in app.js (fitGrid) passend gemaakt tot de onderkant van het scherm. */
+.grid-wrap.nk{background:var(--nk-cell);border-color:var(--nk-line);container-type:inline-size;max-height:none}
+.grid.nk{color:var(--nk-ink);--w2:max(var(--w2min), calc(100cqw - var(--w1) - var(--w3) - 28px - var(--nt) * var(--wt) - 1px))}
+.main:has(.grid-wrap.nk){padding-bottom:16px}
 .grid.nk th,.grid.nk td{background:var(--nk-cell);border-color:var(--nk-line)}
 .grid.nk thead th{background:var(--nk-head);color:var(--nk-head-ink)}
 .grid.nk thead .tnm{color:inherit;opacity:.75}

@@ -117,13 +117,17 @@ let tt=0;function toast(msg,bad){const el=document.getElementById('toast');el.te
 function askConfirm(key){if(S.confirm===key){S.confirm=null;return true}S.confirm=key;schedule();setTimeout(()=>{if(S.confirm===key){S.confirm=null;schedule()}},4000);return false}
 
 /* ---------- render ---------- */
+// nakijktabel loopt door tot de onderkant van het scherm; alleen de tabel scrollt
+function fitGrid(){const g=$app.querySelector('.grid-wrap.nk');if(!g)return;
+  const top=g.getBoundingClientRect().top+window.scrollY;g.style.maxHeight=Math.max(320,window.innerHeight-top-16)+'px'}
+window.addEventListener('resize',fitGrid);
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;render()})}
 function render(){VC={};
   const a=document.activeElement;let f=null;
   if(a&&a.id&&$app.contains(a))f={id:a.id,val:a.value,s:null,e:null,tag:a.tagName};
   if(f&&f.tag==='INPUT'){try{f.s=a.selectionStart;f.e=a.selectionEnd}catch(e){}}
   const gw=$app.querySelector('.grid-wrap');const sc=gw?{l:gw.scrollLeft,t:gw.scrollTop}:null;
-  $app.innerHTML=html();
+  $app.innerHTML=html();fitGrid();
   const gw2=$app.querySelector('.grid-wrap');if(gw2&&sc){gw2.scrollLeft=sc.l;gw2.scrollTop=sc.t}
   if(S.pf){const el=document.getElementById(S.pf);S.pf=null;if(el){el.focus({preventScroll:false});if(el.select)el.select()}return}
   if(f){const el=document.getElementById(f.id);if(el){
@@ -166,7 +170,7 @@ function scoreInput(pre,r,t,v,g,j,extra){const x=raw(r.id,t.nr,g.id);
 function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='normaal';const pc=code(r);
   // smalle blauwe kolom die vast blijft staan, als scheiding tussen de vragen en de teams
   const SP='<td class="stk c4 sp" aria-hidden="true"></td>';
-  let h=`<div class="grid-wrap nk"><table class="grid nk"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
+  let h=`<div class="grid-wrap nk"><table class="grid nk" style="--nt:${T.length}"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
   <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th><th class="stk c4 sp" aria-hidden="true"></th>${T.map(t=>`<th class="ct" title="Team ${t.nr}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
   V.forEach((v,i)=>{
     h+=`<tr class="rq"><td class="stk c1">${pc}.${i+1}</td><td class="stk c2 tl" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</td><td class="stk c3">${v.punten}</td>${SP}${T.map(t=>`<td>${fmt(vraagScore(r.id,t.nr,v))}</td>`).join('')}</tr>`;
