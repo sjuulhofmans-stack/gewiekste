@@ -164,7 +164,7 @@ function scoreInput(pre,r,t,v,g,j,extra){const x=raw(r.id,t.nr,g.id);
   return `<input class="${extra}" id="${id}" data-act="score" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${j?` data-j="${j}"`:''} data-max="${g.punten}" inputmode="numeric" autocomplete="off" value="${val}" aria-label="Team ${t.nr}, ${esc(g.tekst||v.titel||'regel')}${j?', jury '+j:''}"${dis()}>`}
 
 function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='normaal';const pc=code(r);
-  let h=`<div class="grid-wrap"><table class="grid"><colgroup><col class="w1"><col class="w2"><col class="w3">${T.map(()=>'<col class="wt">').join('')}</colgroup>
+  let h=`<div class="grid-wrap nk"><table class="grid nk"><colgroup><col class="w1"><col class="w2"><col class="w3">${T.map(()=>'<col class="wt">').join('')}</colgroup>
   <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th>${T.map(t=>`<th class="ct" title="Team ${t.nr}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
   V.forEach((v,i)=>{
     h+=`<tr class="rq"><td class="stk c1">${pc}.${i+1}</td><td class="stk c2 tl" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</td><td class="stk c3">${v.punten}</td>${T.map(t=>`<td>${fmt(vraagScore(r.id,t.nr,v))}</td>`).join('')}</tr>`;

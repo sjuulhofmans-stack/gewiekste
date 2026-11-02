@@ -11,6 +11,11 @@ body{margin:0}
   --accent:#C47F17; --accent-ink:#FFFFFF; --accent-soft:#F7E8CC;
   --good:#2C7A4B; --good-soft:#DCEFE3; --bad:#B23838; --bad-soft:#F6DFDF; --warn:#8F6200; --warn-soft:#FAEECF;
   --joker:#7446BF; --joker-soft:#ECE3F8;
+  /* nakijktabel: witte vakjes met nachtblauwe kop en totaal, vraagregels middenblauw (gelijk in licht en donker thema) */
+  --nk-cell:#FFFFFF; --nk-side:#F1F4F8; --nk-line:#C9D2DF; --nk-ink:#16202F; --nk-ink-2:#4B586B;
+  --nk-head:#1C2943; --nk-head-ink:#EEF2F8; --nk-head-jk:#C9B3F5;
+  --nk-q:#3A4F78; --nk-q-ink:#FFFFFF; --nk-tot:#1C2943; --nk-tot-ink:#F3C77A;
+  --nk-good:#CDEBD8; --nk-bad:#F4D3D3; --nk-part:#F8E6BB; --nk-joker:#7446BF; --nk-joker-soft:#ECE3F8;
   --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --font-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
   --row:40px; --rowT:52px;
@@ -131,6 +136,23 @@ col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{w
 .grid tfoot tr.trow td{bottom:var(--row)}
 .grid tfoot tr.trow.solo td{bottom:0}
 .grid tfoot .stk{z-index:6}
+/* kleuren van de nakijktabel (raster) */
+.grid-wrap.nk{background:var(--nk-cell);border-color:var(--nk-line);width:max-content;max-width:100%}
+.grid.nk{color:var(--nk-ink)}
+.grid.nk th,.grid.nk td{background:var(--nk-cell);border-color:var(--nk-line)}
+.grid.nk thead th{background:var(--nk-head);color:var(--nk-head-ink)}
+.grid.nk thead .tnm{color:inherit;opacity:.75}
+.grid.nk .jk{color:var(--nk-head-jk)}
+.grid.nk tbody .stk{background:var(--nk-side)}
+.grid.nk .c3{border-right-color:var(--nk-head)}
+.grid.nk tr.rq td{background:var(--nk-q);color:var(--nk-q-ink)}
+.grid.nk tr.rj td{color:var(--nk-ink-2)}
+.grid.nk td.v-max{background:var(--nk-good)}
+.grid.nk td.v-zero{background:var(--nk-bad)}
+.grid.nk td.v-part{background:var(--nk-part)}
+.grid.nk tfoot td{background:var(--nk-tot);color:var(--nk-tot-ink);border-top-color:var(--nk-head)}
+.grid.nk tfoot tr.jrow td{background:var(--nk-joker-soft);color:var(--nk-joker)}
+.grid.nk .gi:focus{background:var(--nk-cell)}
 .gi{display:block;width:100%;height:calc(var(--row) - 1px);border:0;background:transparent;text-align:center;font-variant-numeric:tabular-nums;padding:0}
 .gi:focus{outline:3px solid var(--accent);outline-offset:-3px;background:var(--surface)}
 
