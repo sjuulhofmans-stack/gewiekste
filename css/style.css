@@ -144,7 +144,10 @@ col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{w
 .grid.nk thead .tnm{color:inherit;opacity:.75}
 .grid.nk .jk{color:var(--nk-head-jk)}
 .grid.nk tbody .stk{background:var(--nk-side)}
-.grid.nk .c3{border-right-color:var(--nk-head)}
+.grid.nk .c3{border-right:1px solid var(--nk-line)}
+col.wsp{width:12px}
+.grid.nk .c4{left:calc(var(--w1) + var(--w2) + var(--w3))}
+.grid.nk .sp,.grid.nk tbody .sp,.grid.nk tr.rq .sp,.grid.nk tfoot .sp{background:var(--nk-q);border-color:var(--nk-q)}
 .grid.nk tr.rq td{background:var(--nk-q);color:var(--nk-q-ink)}
 .grid.nk tr.rj td{color:var(--nk-ink-2)}
 .grid.nk td.v-max{background:var(--nk-good)}

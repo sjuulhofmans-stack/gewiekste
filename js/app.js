@@ -164,21 +164,23 @@ function scoreInput(pre,r,t,v,g,j,extra){const x=raw(r.id,t.nr,g.id);
   return `<input class="${extra}" id="${id}" data-act="score" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${j?` data-j="${j}"`:''} data-max="${g.punten}" inputmode="numeric" autocomplete="off" value="${val}" aria-label="Team ${t.nr}, ${esc(g.tekst||v.titel||'regel')}${j?', jury '+j:''}"${dis()}>`}
 
 function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='normaal';const pc=code(r);
-  let h=`<div class="grid-wrap nk"><table class="grid nk"><colgroup><col class="w1"><col class="w2"><col class="w3">${T.map(()=>'<col class="wt">').join('')}</colgroup>
-  <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th>${T.map(t=>`<th class="ct" title="Team ${t.nr}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
+  // smalle blauwe kolom die vast blijft staan, als scheiding tussen de vragen en de teams
+  const SP='<td class="stk c4 sp" aria-hidden="true"></td>';
+  let h=`<div class="grid-wrap nk"><table class="grid nk"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
+  <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th><th class="stk c4 sp" aria-hidden="true"></th>${T.map(t=>`<th class="ct" title="Team ${t.nr}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
   V.forEach((v,i)=>{
-    h+=`<tr class="rq"><td class="stk c1">${pc}.${i+1}</td><td class="stk c2 tl" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</td><td class="stk c3">${v.punten}</td>${T.map(t=>`<td>${fmt(vraagScore(r.id,t.nr,v))}</td>`).join('')}</tr>`;
+    h+=`<tr class="rq"><td class="stk c1">${pc}.${i+1}</td><td class="stk c2 tl" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</td><td class="stk c3">${v.punten}</td>${SP}${T.map(t=>`<td>${fmt(vraagScore(r.id,t.nr,v))}</td>`).join('')}</tr>`;
     v.regels.forEach((g,k)=>{const L=lab(v,k);
       if(v.soort==='creatief'){
-        h+=`<tr class="rg"><td class="stk c1">${L}</td><td class="stk c2 tl" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Beoordeling</i>'} <span class="mut">· gemiddelde</span></td><td class="stk c3">0–${g.punten}</td>${T.map(t=>{const w=waarde(r.id,t.nr,v,g);return `<td class="${cls(w,g.punten)}">${fmt(w)}</td>`}).join('')}</tr>`;
-        for(let j=1;j<=J;j++)h+=`<tr class="rj"><td class="stk c1"></td><td class="stk c2 tl">Jury ${j}</td><td class="stk c3">0–${g.punten}</td>${T.map(t=>`<td>${scoreInput('s',r,t,v,g,j,'gi')}</td>`).join('')}</tr>`;
+        h+=`<tr class="rg"><td class="stk c1">${L}</td><td class="stk c2 tl" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Beoordeling</i>'} <span class="mut">· gemiddelde</span></td><td class="stk c3">0–${g.punten}</td>${SP}${T.map(t=>{const w=waarde(r.id,t.nr,v,g);return `<td class="${cls(w,g.punten)}">${fmt(w)}</td>`}).join('')}</tr>`;
+        for(let j=1;j<=J;j++)h+=`<tr class="rj"><td class="stk c1"></td><td class="stk c2 tl">Jury ${j}</td><td class="stk c3">0–${g.punten}</td>${SP}${T.map(t=>`<td>${scoreInput('s',r,t,v,g,j,'gi')}</td>`).join('')}</tr>`;
       }else{
-        h+=`<tr><td class="stk c1">${L}</td><td class="stk c2 tl" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Antwoord nog niet ingevuld</i>'}</td><td class="stk c3">${g.punten}</td>${T.map(t=>{const w=waarde(r.id,t.nr,v,g);return `<td class="${cls(w,g.punten)}">${scoreInput('s',r,t,v,g,0,'gi')}</td>`}).join('')}</tr>`;
+        h+=`<tr><td class="stk c1">${L}</td><td class="stk c2 tl" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Antwoord nog niet ingevuld</i>'}</td><td class="stk c3">${g.punten}</td>${SP}${T.map(t=>{const w=waarde(r.id,t.nr,v,g);return `<td class="${cls(w,g.punten)}">${scoreInput('s',r,t,v,g,0,'gi')}</td>`}).join('')}</tr>`;
       }});
   });
   const anyJ=isN&&T.some(t=>jokerOf(t.nr)===r.id);
-  h+=`</tbody><tfoot><tr class="trow${anyJ?'':' solo'}"><td class="stk c1"></td><td class="stk c2 tl">Totaal rubriek</td><td class="stk c3">${r.max}</td>${T.map(t=>`<td>${rubTot(r.id,t.nr)}</td>`).join('')}</tr>`;
-  if(anyJ)h+=`<tr class="jrow"><td class="stk c1">★</td><td class="stk c2 tl">Met joker (×2)</td><td class="stk c3"></td>${T.map(t=>`<td>${jokerOf(t.nr)===r.id?rubTot(r.id,t.nr)*2:''}</td>`).join('')}</tr>`;
+  h+=`</tbody><tfoot><tr class="trow${anyJ?'':' solo'}"><td class="stk c1"></td><td class="stk c2 tl">Totaal rubriek</td><td class="stk c3">${r.max}</td>${SP}${T.map(t=>`<td>${rubTot(r.id,t.nr)}</td>`).join('')}</tr>`;
+  if(anyJ)h+=`<tr class="jrow"><td class="stk c1">★</td><td class="stk c2 tl">Met joker (×2)</td><td class="stk c3"></td>${SP}${T.map(t=>`<td>${jokerOf(t.nr)===r.id?rubTot(r.id,t.nr)*2:''}</td>`).join('')}</tr>`;
   return h+'</tfoot></table></div>'}
 
 function perTeam(r,T){if(!T.some(t=>t.nr===S.team))S.team=T[0].nr;const t=T.find(x=>x.nr===S.team);const idx=T.indexOf(t);
