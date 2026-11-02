@@ -247,7 +247,7 @@ function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   let notes='';for(let i=0;i<Math.min(3,L.length-1);i++){const a=L[i],b=L[i+1];
     if(a.tot===b.tot){if(a.crea!==b.crea)notes+=`<div class="notice">${nm(a)} en ${nm(b)} hebben allebei ${a.tot} punten. Beslist op de creatieve opdrachten: ${a.crea} tegen ${b.crea}.</div>`;
       else notes+=`<div class="notice bad">${nm(a)} en ${nm(b)} staan precies gelijk, ook op de creatieve opdrachten (${a.crea}). Het bestuur moet zelf beslissen.</div>`}}
-  let h=`<div class="rhead"><div><h2>Uitslag</h2><p class="mut">Bij gelijke punten wint het team met de hoogste score op de creatieve opdrachten.</p></div><span class="badge ${pct===100?'ok':'warn'}">Nakijken ${pct}% ingevuld</span></div>
+  let h=`<div class="rhead"><span class="badge ${pct===100?'ok':'warn'}" style="margin-left:auto">Nakijken ${pct}% ingevuld</span></div>
   <div class="uitslag"><div class="seg" role="group" aria-label="Uitslag"><button data-act="uj" data-m="met" aria-pressed="${!zj}">Met joker</button><button data-act="uj" data-m="zonder" aria-pressed="${zj}">Zonder joker</button></div>${notes}
   <div class="grid-wrap"><table class="grid"><colgroup><col class="wr"><col class="wu"><col class="wr"></colgroup>
   <thead><tr><th>Plaats</th><th class="tl">Team</th><th>Punten</th></tr></thead><tbody>`;
