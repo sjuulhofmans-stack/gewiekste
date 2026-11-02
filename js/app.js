@@ -38,7 +38,7 @@ const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
 
-try{S.rid=localStorage.getItem('gg_rid');S.mode=localStorage.getItem('gg_mode')||'raster';const t=+localStorage.getItem('gg_team');if(t)S.team=t;}catch(e){}
+try{S.rid=localStorage.getItem('gg_rid');S.mode=localStorage.getItem('gg_mode')||'raster';S.uj=localStorage.getItem('gg_uj')||'met';const t=+localStorage.getItem('gg_team');if(t)S.team=t;}catch(e){}
 const h0=location.hash.slice(1); if([...TABS,...BTABS].some(t=>t[0]===h0))S.tab=h0;
 
 /* ---------- helpers ---------- */
@@ -79,10 +79,10 @@ function vraagScore(rid,nr,v){let s=null;for(const g of v.regels){const w=waarde
 function rubTot(rid,nr){let s=0;for(const v of vragen(rid))for(const g of v.regels){const w=waarde(rid,nr,v,g);if(w!=null)s+=w}return s}
 function creaTot(nr){let s=0;for(const r of rubs())for(const v of vragen(r.id))if(v.soort==='creatief')for(const g of v.regels){const w=waarde(r.id,nr,v,g);if(w!=null)s+=w}return s}
 function jokerOf(nr){const j=(S.jokers||{})[String(nr)];const r=j&&rub(j);return r&&r.soort==='normaal'?r.id:null}
-function teamTot(nr){let t=0;for(const r of rubs())t+=rubTot(r.id,nr)*(jokerOf(nr)===r.id?2:1);return t}
+function teamTot(nr,zonderJ){let t=0;for(const r of rubs())t+=rubTot(r.id,nr)*(!zonderJ&&jokerOf(nr)===r.id?2:1);return t}
 function progress(rid,nr){let d=0,a=0;for(const v of vragen(rid))for(const g of v.regels){a++;if(waarde(rid,nr,v,g)!=null)d++}return[d,a]}
 function cls(w,max){if(w==null)return'';if(max>0&&w>=max)return'v-max';if(w===0)return'v-zero';return'v-part'}
-function ranking(){const L=teams().map(t=>({...t,tot:teamTot(t.nr),crea:creaTot(t.nr)}));
+function ranking(zonderJ){const L=teams().map(t=>({...t,tot:teamTot(t.nr,zonderJ),crea:creaTot(t.nr)}));
   L.sort((a,b)=>b.tot-a.tot||b.crea-a.crea||a.nr-b.nr);let p=0;
   L.forEach((x,i)=>{if(i===0||x.tot!==L[i-1].tot||x.crea!==L[i-1].crea)p=i+1;x.place=p});return L}
 
@@ -232,22 +232,21 @@ function vOverzicht(){const T=teams();const R=rubs();
   T.forEach(t=>{const jk=jokerOf(t.nr);
     h+=`<tr><td class="stk c1"><b>${t.nr}</b></td><td class="stk tl" style="left:var(--w1)" title="${esc(t.naam)}">${esc(t.naam)}</td>${R.map(r=>{const s=rubTot(r.id,t.nr);return jk===r.id?`<td class="jc" title="Joker: ${s} × 2">★ ${s*2}</td>`:`<td>${s}</td>`}).join('')}<td><b>${teamTot(t.nr)}</b></td></tr>`});
   return h+'</tbody></table></div>'}
-function vUitslag(){const L=ranking();
+// alleen plaats, teamnaam en totaal; met de knoppen kies je met of zonder joker
+function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   if(!L.length)return empty('Nog geen uitslag','Er zijn nog geen teams aangemaakt.');
   let filled=0,all=0;for(const r of rubs())for(const t of L){const[d,a]=progress(r.id,t.nr);filled+=d;all+=a}
   const pct=all?Math.round(filled/all*100):0;
+  const nm=x=>esc(x.naam||'Team '+x.nr);
   let notes='';for(let i=0;i<Math.min(3,L.length-1);i++){const a=L[i],b=L[i+1];
-    if(a.tot===b.tot){if(a.crea!==b.crea)notes+=`<div class="notice">Team ${a.nr} en team ${b.nr} hebben allebei ${a.tot} punten. Beslist op de creatieve opdrachten: ${a.crea} tegen ${b.crea}.</div>`;
-      else notes+=`<div class="notice bad">Team ${a.nr} en team ${b.nr} staan precies gelijk, ook op de creatieve opdrachten (${a.crea}). Het bestuur moet zelf beslissen.</div>`}}
-  const pod=L.slice(0,3).map((x,i)=>`<div class="pod p${i+1}"><span class="pl">${x.place}</span><span class="pt">${esc(teamLabel(x))}</span><span class="pp"><b>${x.tot}</b> punten</span></div>`);
-  const order=pod.length===3?[pod[1],pod[0],pod[2]]:pod;
+    if(a.tot===b.tot){if(a.crea!==b.crea)notes+=`<div class="notice">${nm(a)} en ${nm(b)} hebben allebei ${a.tot} punten. Beslist op de creatieve opdrachten: ${a.crea} tegen ${b.crea}.</div>`;
+      else notes+=`<div class="notice bad">${nm(a)} en ${nm(b)} staan precies gelijk, ook op de creatieve opdrachten (${a.crea}). Het bestuur moet zelf beslissen.</div>`}}
   let h=`<div class="rhead"><div><h2>Uitslag</h2><p class="mut">Bij gelijke punten wint het team met de hoogste score op de creatieve opdrachten.</p></div><span class="badge ${pct===100?'ok':'warn'}">Nakijken ${pct}% ingevuld</span></div>
-  <div class="podium">${order.join('')}</div>${notes}
-  <div class="grid-wrap" style="max-height:none"><table class="grid"><colgroup><col class="wr"><col class="w1"><col class="wn"><col class="wr"><col class="wr"><col class="wn"></colgroup>
-  <thead><tr><th>Plaats</th><th>Team</th><th class="tl">Naam</th><th>Punten</th><th title="Creatieve opdrachten, voor gelijke stand">Creatief</th><th class="tl">Joker</th></tr></thead><tbody>`;
-  L.forEach(x=>{const jk=jokerOf(x.nr);const r=jk&&rub(jk);
-    h+=`<tr><td><b>${x.place}</b></td><td>${x.nr}</td><td class="tl" title="${esc(x.naam)}">${esc(x.naam)}</td><td><b>${x.tot}</b></td><td>${x.crea}</td><td class="tl">${r?'★ '+code(r)+' · '+esc(r.naam):'<span class="mut">–</span>'}</td></tr>`});
-  return h+'</tbody></table></div>'}
+  <div class="uitslag"><div class="seg" role="group" aria-label="Uitslag"><button data-act="uj" data-m="met" aria-pressed="${!zj}">Met joker</button><button data-act="uj" data-m="zonder" aria-pressed="${zj}">Zonder joker</button></div>${notes}
+  <div class="grid-wrap"><table class="grid"><colgroup><col class="wr"><col class="wu"><col class="wr"></colgroup>
+  <thead><tr><th>Plaats</th><th class="tl">Team</th><th>Punten</th></tr></thead><tbody>`;
+  L.forEach(x=>{h+=`<tr><td><b>${x.place}</b></td><td class="tl" title="${nm(x)}">${nm(x)}</td><td><b>${x.tot}</b></td></tr>`});
+  return h+'</tbody></table></div></div>'}
 
 /* ---------- Beheer ---------- */
 function vTeams(){const T=teams();
@@ -333,6 +332,7 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='logout'){firebase.auth().signOut().then(()=>location.reload());return}
   if(a==='tab'){S.tab=el.dataset.tab;try{history.replaceState(null,'','#'+S.tab)}catch(x){}render();window.scrollTo(0,0);return}
   if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
+  if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
   if(a==='team-prev'||a==='team-next'){const T=teams();const i=T.findIndex(t=>t.nr===S.team)+(a==='team-next'?1:-1);if(T[i]){S.team=T[i].nr;store('gg_team',S.team)}render();window.scrollTo(0,0);return}
   if(a==='set'){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.dataset.rg,val=+el.dataset.v;if(raw(rid,nr,rg)!==val)saveScore(rid,nr,rg,val);return}
   if(a==='add-regel'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);const id=newId();o.regels.push({id,tekst:'',punten:0});

@@ -182,13 +182,11 @@ col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{w
 .formgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
 
 /* uitslag */
-.podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:end}
-.pod{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:4px;min-width:0}
-.pod.p1{background:var(--night);color:var(--night-ink);border-color:var(--night);padding-block:28px}
-.pod .pl{font-family:var(--font-display);font-weight:800;font-size:2.4rem;line-height:1;color:var(--accent)}
-.pod .pt{font-weight:700;font-size:1.15rem;overflow-wrap:anywhere}
-.pod .pp{font-variant-numeric:tabular-nums;font-size:1.05rem}
-.pod.p1 .pl{font-size:3.2rem}
+/* één gecentreerde tabel met daarboven de keuze met/zonder joker */
+.uitslag{display:flex;flex-direction:column;align-items:center;gap:14px}
+.uitslag .notice{width:min(100%,560px)}
+.uitslag .grid-wrap{max-height:none;min-height:0;max-width:100%}
+col.wu{width:360px}
 .legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.95rem;color:var(--ink-2)}
 
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(560px,calc(100vw - 32px));background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -210,7 +208,7 @@ col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{w
   .lrow.rb{grid-template-columns:36px minmax(0,1fr) 64px 76px 64px;font-size:.92rem}
   .lrow.rb .soort{display:none}
   .cols2,.formgrid{grid-template-columns:1fr}
-  .podium{grid-template-columns:1fr}
+  col.wu{width:200px}
   .sel-team{min-width:0;flex:1 1 100%;order:-1}
   .rubsel{flex:1 1 100%}.sel-rub{min-width:0;flex:1}
   .teambar .btn{flex:1}
