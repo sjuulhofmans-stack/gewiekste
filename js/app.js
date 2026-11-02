@@ -242,6 +242,8 @@ function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   let filled=0,all=0;for(const r of rubs())for(const t of L){const[d,a]=progress(r.id,t.nr);filled+=d;all+=a}
   const pct=all?Math.round(filled/all*100):0;
   const nm=x=>esc(x.naam||'Team '+x.nr);
+  // eerst dicht: alleen de beheerder kan de winnaar onthullen, daarna ziet iedereen de tabel
+  if(!cfg().onthuld)return `<div class="gate">${OWL}<h2>Wie wordt de winnaar?</h2>${S.isOwner?`<p>Klaar met nakijken? Zet het scherm groot en druk op de knop.</p>${pct<100?`<p class="gate-let">Let op: nog niet alles is nagekeken (${pct}%).</p>`:''}<button class="btn primary huge" data-act="winnaar">🏆 Toon de winnaar!</button>`:'<p>De uitslag wordt straks samen bekendgemaakt. Even geduld…</p>'}</div>`;
   let notes='';for(let i=0;i<Math.min(3,L.length-1);i++){const a=L[i],b=L[i+1];
     if(a.tot===b.tot){if(a.crea!==b.crea)notes+=`<div class="notice">${nm(a)} en ${nm(b)} hebben allebei ${a.tot} punten. Beslist op de creatieve opdrachten: ${a.crea} tegen ${b.crea}.</div>`;
       else notes+=`<div class="notice bad">${nm(a)} en ${nm(b)} staan precies gelijk, ook op de creatieve opdrachten (${a.crea}). Het bestuur moet zelf beslissen.</div>`}}
@@ -250,7 +252,71 @@ function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   <div class="grid-wrap"><table class="grid"><colgroup><col class="wr"><col class="wu"><col class="wr"></colgroup>
   <thead><tr><th>Plaats</th><th class="tl">Team</th><th>Punten</th></tr></thead><tbody>`;
   L.forEach(x=>{h+=`<tr><td><b>${x.place}</b></td><td class="tl" title="${nm(x)}">${nm(x)}</td><td><b>${x.tot}</b></td></tr>`});
-  return h+'</tbody></table></div></div>'}
+  h+='</tbody></table></div>';
+  if(S.isOwner)h+=`<div class="toolbar"><button class="btn" data-act="winnaar">🏆 Winnaar nog een keer tonen</button><button class="btn" data-act="verberg">Uitslag weer verbergen</button></div>`;
+  return h+'</div>'}
+
+/* ---------- winnaar tonen (alleen beheerder) ---------- */
+// schermvullende show bovenop de pagina: aftellen 10 → 1, plaats 3 en 2, tromgeroffel, winnaar met confetti
+let SH=null;
+const wacht=ms=>new Promise(r=>setTimeout(r,ms));
+// geluiden zelf opgewekt met de Web Audio API, er zijn geen geluidsbestanden nodig
+function geluid(){const niks=()=>{};try{const C=new (window.AudioContext||window.webkitAudioContext)();const T=()=>C.currentTime;
+  const toon=(f,t,d,type,v)=>{const o=C.createOscillator(),g=C.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,T()+t);g.gain.linearRampToValueAtTime(v,T()+t+.01);g.gain.exponentialRampToValueAtTime(.001,T()+t+d);o.connect(g).connect(C.destination);o.start(T()+t);o.stop(T()+t+d+.05)};
+  const ruis=(t,d,v)=>{const b=C.createBuffer(1,Math.ceil(C.sampleRate*d),C.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*(1-i/a.length);
+    const s=C.createBufferSource(),f=C.createBiquadFilter(),g=C.createGain();f.type='lowpass';f.frequency.value=1600;g.gain.value=v;s.buffer=b;s.connect(f).connect(g).connect(C.destination);s.start(T()+t)};
+  return{
+    tik:n=>{toon(320+(10-n)*70,0,.16,'square',.1);if(n<=3){toon(70,0,.3,'sine',.6);toon(58,.2,.3,'sine',.45)}}, // laatste drie: hartslag
+    roffel:sec=>{const n=Math.floor(sec*20);for(let i=0;i<n;i++)ruis(i/20,.07,.1+.4*i/n)},
+    boem:()=>{toon(55,0,1.4,'sine',.8);ruis(0,.9,.7)},
+    fanfare:()=>{[[523,0],[659,.14],[784,.28],[1047,.42],[784,.7],[1047,.84]].forEach(([f,t])=>{toon(f,t,.45,'sawtooth',.07);toon(f/2,t,.45,'triangle',.12)});[523,659,784,1047].forEach(f=>toon(f,1.05,2,'sawtooth',.05))},
+    stil:()=>{try{C.close()}catch(e){}}}}
+  catch(e){return{tik:niks,roffel:niks,boem:niks,fanfare:niks,stil:niks}}}
+function confetti(cv){const ctx=cv.getContext('2d'),d=window.devicePixelRatio||1,css=getComputedStyle(document.documentElement);
+  const kl=['--accent','--joker','--good','--bad','--warn','--night-ink'].map(k=>css.getPropertyValue(k).trim());
+  const rustig=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let P=[],id=0,regen=false;const fit=()=>{cv.width=innerWidth*d;cv.height=innerHeight*d};fit();addEventListener('resize',fit);
+  const deel=(x,y,vx,vy)=>({x,y,vx,vy,w:(7+Math.random()*7)*d,h:(10+Math.random()*12)*d,c:kl[Math.floor(Math.random()*kl.length)],r:Math.random()*6,vr:(Math.random()-.5)*.35});
+  const kanon=(links,n)=>{if(rustig)n=Math.round(n/4);for(let i=0;i<n;i++){const a=(links?-62:-118)*Math.PI/180+(Math.random()-.5)*.7,s=(18+Math.random()*20)*d;P.push(deel(links?0:cv.width,cv.height,Math.cos(a)*s,Math.sin(a)*s))}};
+  const stap=()=>{ctx.clearRect(0,0,cv.width,cv.height);
+    if(regen&&P.length<900)for(let i=0;i<(rustig?1:4);i++)P.push(deel(Math.random()*cv.width,-30*d,(Math.random()-.5)*3*d,(1+Math.random()*3)*d));
+    P=P.filter(p=>p.y<cv.height+50*d);
+    for(const p of P){p.vx*=.97;p.vy=p.vy*.96+.25*d;p.x+=p.vx+Math.sin(p.r)*.6*d;p.y+=p.vy;p.r+=p.vr;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.scale(Math.cos(p.r*1.7),1);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore()}
+    id=requestAnimationFrame(stap)};stap();
+  return{kanon,regen:v=>{regen=v},stop:()=>{cancelAnimationFrame(id);removeEventListener('resize',fit)}}}
+async function toonWinnaar(){if(SH||!S.isOwner)return;const L=ranking(false);if(!L.length)return;
+  const c=cfg(),nm=x=>esc(x.naam||'Team '+x.nr),kop=`<div class="sh-kop">${esc(c.naam||'Genneps Gewiekste')}${c.editie?' · '+esc(c.editie):''}</div>`;
+  const win=L.filter(x=>x.place===1),rest=win.length>1?[]:L.slice(1,3).reverse(); // eerst plaats 3, dan 2
+  const el=document.createElement('div');el.id='show';el.className='show';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','De winnaar bekendmaken');
+  el.innerHTML='<div class="sh-licht" aria-hidden="true"></div><canvas class="sh-conf" aria-hidden="true"></canvas><button class="sh-x" aria-label="Show stoppen">✕</button><div class="sh-stage" aria-live="assertive"></div>';
+  document.body.appendChild(el);document.body.classList.add('show-open');SH=el;
+  const G=geluid(),K=confetti(el.querySelector('canvas')),st=el.querySelector('.sh-stage');
+  let stop=false,iv=0;
+  const toets=e=>{if(e.key==='Escape')sluit()};
+  const sluit=()=>{stop=true;clearInterval(iv);G.stil();K.stop();el.remove();document.body.classList.remove('show-open');removeEventListener('keydown',toets);SH=null};
+  addEventListener('keydown',toets);el.querySelector('.sh-x').onclick=sluit;
+  const fase=(f,html)=>{el.dataset.fase=f;st.innerHTML=html};
+  const w=async ms=>{await wacht(ms);if(stop)throw 0};
+  try{
+    fase('intro',kop+'<div class="sh-titel">Wie wordt de winnaar?</div>');await w(2400);
+    fase('tel',kop+'<div class="sh-ring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="sh-rb" cx="100" cy="100" r="90"/><circle class="sh-rv" cx="100" cy="100" r="90"/></svg><span class="sh-num"></span></div><div class="sh-sub"></div>');
+    const num=st.querySelector('.sh-num'),rv=st.querySelector('.sh-rv'),sub=st.querySelector('.sh-sub');
+    const zin={10:'Daar gaan we…',7:'Het wordt spannend…',5:'Nog even volhouden…',3:'Adem in…',1:'!!!'};
+    for(let n=10;n>=1;n--){const ms=n<=3?1400:1000;
+      num.textContent=n;num.classList.remove('pop');void num.offsetWidth;num.classList.add('pop');
+      rv.style.transitionDuration=ms+'ms';rv.style.strokeDashoffset=String(565.5*(1-(n-1)/10));
+      if(zin[n])sub.textContent=zin[n];el.classList.toggle('spannend',n<=3);G.tik(n);await w(ms)}
+    el.classList.remove('spannend');
+    for(const x of rest){fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats…</div>`);G.roffel(1.8);await w(2000);
+      fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats</div><div class="sh-naam">${nm(x)}</div><div class="sh-pnt">${x.tot} punten</div>`);G.boem();K.kanon(true,40);K.kanon(false,40);await w(4000)}
+    fase('drum',`<div class="sh-titel">En de winnaar van ${esc(c.naam||'Genneps Gewiekste')} is…</div>`);el.classList.add('spannend');G.roffel(4.2);await w(4400);
+    el.classList.remove('spannend');
+    fase('winnaar',`<div class="sh-flits" aria-hidden="true"></div>${OWL}<div class="sh-kop">${win.length>1?'De winnaars zijn':'De winnaar is'}</div>${win.map(x=>`<div class="sh-naam groot">${nm(x)}</div>`).join('')}<div class="sh-pnt">${win[0].tot} punten</div><button class="btn primary big sh-door">Bekijk de hele uitslag</button>`);
+    G.boem();G.fanfare();K.kanon(true,180);K.kanon(false,180);K.regen(true);iv=setInterval(()=>K.kanon(Math.random()<.5,90),2200);
+    st.querySelector('.sh-door').onclick=sluit;
+    if(!c.onthuld){const cc=clone(c);cc.onthuld=true;saveConfig(cc)}
+  }catch(e){if(e!==0)throw e}}
 
 /* ---------- Beheer ---------- */
 function vTeams(){const T=teams();
@@ -337,6 +403,8 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='tab'){S.tab=el.dataset.tab;try{history.replaceState(null,'','#'+S.tab)}catch(x){}render();window.scrollTo(0,0);return}
   if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
+  if(a==='winnaar'){toonWinnaar();return}
+  if(a==='verberg'){const c=clone(cfg());c.onthuld=false;saveConfig(c);toast('De uitslag is weer verborgen.');return}
   if(a==='team-prev'||a==='team-next'){const T=teams();const i=T.findIndex(t=>t.nr===S.team)+(a==='team-next'?1:-1);if(T[i]){S.team=T[i].nr;store('gg_team',S.team)}render();window.scrollTo(0,0);return}
   if(a==='set'){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.dataset.rg,val=+el.dataset.v;if(raw(rid,nr,rg)!==val)saveScore(rid,nr,rg,val);return}
   if(a==='add-regel'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);const id=newId();o.regels.push({id,tekst:'',punten:0});
