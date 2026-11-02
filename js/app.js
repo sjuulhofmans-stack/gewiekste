@@ -29,7 +29,7 @@ const DEF={naam:'Genneps Gewiekste',editie:'6e editie',jury:3,rubrieken:[
   ...Array.from({length:10},(_,i)=>({id:'r'+(i+1),naam:'Rubriek '+(i+2),soort:'normaal',vragen:7,max:1000})),
   {id:'gh',naam:'Geheime opdracht',soort:'geheim',vragen:1,max:1000}
 ]};
-const TABS=[['nakijken','Nakijken'],['vragen','Vragen & antwoorden'],['overzicht','Totaaloverzicht'],['uitslag','Uitslag']];
+const TABS=[['vragen','Vragen & antwoorden'],['nakijken','Nakijken'],['overzicht','Totaaloverzicht'],['uitslag','Uitslag']];
 const BTABS=[['teams','Teams'],['jokers','Jokers'],['instellingen','Instellingen']];
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
