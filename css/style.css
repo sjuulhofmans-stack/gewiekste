@@ -1,6 +1,7 @@
 *,*::before,*::after{box-sizing:border-box}
 html{scrollbar-gutter:stable} /* ruimte voor de scrollbalk altijd vrijhouden, zodat de pagina niet verspringt */
 body{margin:0}
+*{scrollbar-color:var(--sb-thumb) var(--sb-track)} /* rustige, donkere scrollbalken die wegvallen */
 [hidden]{display:none!important}
 
 /* Layout: nachtblauwe kopband met tabbladen, daaronder één werkvlak; alle invulregels vaste hoogte */
@@ -11,6 +12,7 @@ body{margin:0}
   --accent:#C47F17; --accent-ink:#FFFFFF; --accent-soft:#F7E8CC;
   --good:#2C7A4B; --good-soft:#DCEFE3; --bad:#B23838; --bad-soft:#F6DFDF; --warn:#8F6200; --warn-soft:#FAEECF;
   --joker:#7446BF; --joker-soft:#ECE3F8;
+  --sb-thumb:#B9C3D1; --sb-track:#F1F4F8; /* scrollbalken */
   /* nakijktabel: witte vakjes met nachtblauwe kop en totaal, vraagregels middenblauw (gelijk in licht en donker thema) */
   --nk-cell:#FFFFFF; --nk-side:#F1F4F8; --nk-line:#C9D2DF; --nk-ink:#16202F; --nk-ink-2:#4B586B;
   --nk-head:#1C2943; --nk-head-ink:#EEF2F8; --nk-head-jk:#C9B3F5;
@@ -26,13 +28,13 @@ body{margin:0}
   --ink:#E8EDF4; --ink-2:#A3AFC1; --night:#0A0E15; --night-ink:#E8EDF4;
   --accent:#E3A23F; --accent-ink:#1A1206; --accent-soft:#3A2B12;
   --good:#63C28E; --good-soft:#163024; --bad:#E57373; --bad-soft:#3B1D1F; --warn:#E8B64C; --warn-soft:#33290F;
-  --joker:#B898F2; --joker-soft:#2A2141; color-scheme:dark;}}
+  --joker:#B898F2; --joker-soft:#2A2141; --sb-thumb:#263044; --sb-track:#0F141D; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0F141D; --surface:#1D2738; --surface-2:#2A3650; --line:#435572;
   --ink:#E8EDF4; --ink-2:#A3AFC1; --night:#0A0E15; --night-ink:#E8EDF4;
   --accent:#E3A23F; --accent-ink:#1A1206; --accent-soft:#3A2B12;
   --good:#63C28E; --good-soft:#163024; --bad:#E57373; --bad-soft:#3B1D1F; --warn:#E8B64C; --warn-soft:#33290F;
-  --joker:#B898F2; --joker-soft:#2A2141; color-scheme:dark;}
+  --joker:#B898F2; --joker-soft:#2A2141; --sb-thumb:#263044; --sb-track:#0F141D; color-scheme:dark;}
 @media (max-width:700px){:root{--w1:48px;--w2:150px;--w2min:150px;--w3:64px;--wt:60px}}
 
 body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--font-body)}
