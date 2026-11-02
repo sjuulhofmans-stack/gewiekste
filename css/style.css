@@ -213,6 +213,19 @@ col.wsp{width:28px}
 .uitslag .grid-wrap{max-height:none;min-height:0;max-width:100%}
 col.wu{width:360px}
 
+/* statistieken: kaartjes met één groot getal */
+.stitle{font-size:1.15rem;margin:6px 0 -6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+.stats.lists{grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat .sv{font-family:var(--font-display);font-weight:800;font-size:2rem;line-height:1.1;color:var(--accent);font-variant-numeric:tabular-nums}
+.stat .sl{font-weight:700}
+.stat .sd{color:var(--ink-2);font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat ol{margin:6px 0 0;padding-left:1.4em;display:flex;flex-direction:column;gap:4px}
+.stat li{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stat li b{display:inline-block;min-width:3.2em;color:var(--accent)}
+@media (max-width:760px){.stats.lists{grid-template-columns:1fr}}
+
 /* uitslag nog dicht: grote knop voor de beheerder */
 .gate{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:48px 24px;background:var(--night);color:var(--night-ink);border-radius:16px;width:100%;max-width:680px;margin:0 auto}
 .gate .owl{width:110px;height:110px}

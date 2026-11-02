@@ -32,7 +32,7 @@ const DEF={naam:'Genneps Gewiekste',editie:'6e editie',jury:3,rubrieken:[
 ]};
 // vaste rubriek Overige (extra punten) altijd achteraan, ook in oudere opgeslagen instellingen
 function metOverig(c){if(c&&Array.isArray(c.rubrieken)&&!c.rubrieken.some(r=>r.soort==='overig'))c.rubrieken.push({id:'ov',naam:'Overige',soort:'overig',vragen:1,max:1000});return c}
-const TABS=[['vragen','Vragen & antwoorden'],['nakijken','Nakijken'],['overzicht','Totaaloverzicht'],['uitslag','Uitslag']];
+const TABS=[['vragen','Vragen & antwoorden'],['nakijken','Nakijken'],['overzicht','Totaaloverzicht'],['uitslag','Uitslag'],['stats','Statistieken']];
 const BTABS=[['teams','Teams'],['jokers','Jokers'],['instellingen','Instellingen']];
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
@@ -145,7 +145,7 @@ function notices(){let h='';
   return h}
 function vLogin(){return `<div class="login">${OWL}<h2>Welkom bij de uitslagen</h2><p class="mut">Log in met je Google-account om vragen en scores in te vullen. Alles wordt direct opgeslagen.</p><button class="btn primary big" data-act="login">Inloggen met Google</button></div>`}
 function view(){if(S.needLogin)return vLogin();if(S.noAccess)return '';let t=S.tab;if(BTABS.some(x=>x[0]===t)&&!S.isOwner)t='nakijken';
-  return({nakijken:vNakijken,vragen:vVragen,overzicht:vOverzicht,uitslag:vUitslag,teams:vTeams,jokers:vJokers,instellingen:vInst}[t]||vNakijken)()}
+  return({nakijken:vNakijken,vragen:vVragen,overzicht:vOverzicht,uitslag:vUitslag,stats:vStats,teams:vTeams,jokers:vJokers,instellingen:vInst}[t]||vNakijken)()}
 function empty(t,p){return `<div class="empty"><h3>${t}</h3><p>${p}</p></div>`}
 // rubriekkeuze: één uitklapmenu in plaats van een rij knoppen
 function rubSelect(){ensureRid();return `<label class="rubsel"><span>Rubriek</span><select class="inp sel-rub" id="rubsel" data-act="rub">${rubs().map(r=>`<option value="${r.id}"${r.id===S.rid?' selected':''}>${code(r)} · ${esc(r.naam)}</option>`).join('')}</select></label>`}
@@ -257,6 +257,74 @@ function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   h+='</tbody></table></div>';
   if(S.isOwner)h+=`<div class="toolbar"><button class="btn" data-act="winnaar">🏆 Winnaar nog een keer tonen</button><button class="btn" data-act="verberg">Uitslag weer verbergen</button></div>`;
   return h+'</div>'}
+
+/* ---------- Statistieken ---------- */
+// per vraag: gescoorde punten (w) tegen maximaal haalbaar (m) over alle ingevulde regels, en hoeveel teams hem helemaal goed hadden
+function statVragen(T){const out=[];
+  for(const r of rubs())vragen(r.id).forEach((v,i)=>{let w=0,m=0,vol=0,klaar=0;const goed=[];
+    for(const t of T){let tw=0,tm=0,alles=true;
+      for(const g of v.regels){if(!g.punten)continue;const x=waarde(r.id,t.nr,v,g);if(x==null){alles=false;continue}tw+=x;tm+=g.punten}
+      w+=tw;m+=tm;if(alles&&tm>0){klaar++;if(tw>=tm){vol++;goed.push(t.nr)}}}
+    out.push({r,v,i,w,m,pct:m?w/m:null,vol,klaar,goed})});
+  return out}
+function vStats(){const T=teams();if(!T.length)return empty('Nog geen statistieken','Er zijn nog geen teams aangemaakt.');
+  const Q=statVragen(T),B=Q.filter(q=>q.m>0),Z=Q.filter(q=>q.v.regels.some(g=>g.punten));
+  const pc=p=>p==null?'–':Math.round(p*100)+'%',nl=n=>Number(n).toLocaleString('nl-NL'),nm=t=>esc(t.naam||'Team '+t.nr);
+  const qn=q=>`Vraag ${code(q.r)}.${q.i+1}${q.v.titel?' · '+esc(q.v.titel):' · '+esc(q.r.naam)}`;
+  const kaart=(v,l,d)=>`<div class="stat"><span class="sv">${v}</span><span class="sl">${l}</span>${d?`<span class="sd" title="${d}">${d}</span>`:''}</div>`;
+  const lijst=(l,a)=>`<div class="stat"><span class="sl">${l}</span>${a.length?`<ol>${a.map(q=>`<li><b>${pc(q.pct)}</b> ${qn(q)}</li>`).join('')}</ol>`:'<span class="sd">Nog niets nagekeken</span>'}</div>`;
+  const kop=t=>`<h3 class="stitle">${t}</h3>`;
+  // nakijken
+  let fd=0,fa=0;for(const r of rubs())for(const t of T){const[d,a]=progress(r.id,t.nr);fd+=d;fa+=a}
+  const vk=Z.filter(q=>q.klaar===T.length).length,nj=T.filter(t=>jokerOf(t.nr)).length;
+  let h=`<div class="rhead"><div><h2>Statistieken</h2><p class="mut">Percentage = gemiddeld behaalde punten van het maximum.</p></div></div>`+kop('Nakijken')+'<div class="stats">'+
+    kaart(pc(fa?fd/fa:0),'Nagekeken',`${nl(fd)} van ${nl(fa)} regels`)+
+    kaart(`${vk} / ${Z.length}`,'Vragen helemaal klaar','Voor alle teams ingevuld')+
+    kaart(T.length,'Teams',`${nj} met een joker`)+
+    kaart(rubs().length,'Rubrieken',`${Q.length} vragen in totaal`)+'</div>';
+  // vragen
+  const S2=B.slice().sort((a,b)=>a.pct-b.pct||b.m-a.m),ms=S2[0],mk=S2[S2.length-1];
+  const nooit=B.filter(q=>q.klaar&&q.vol===0).length,ieder=B.filter(q=>q.klaar===T.length&&q.vol===T.length).length;
+  const meest=B.slice().sort((a,b)=>b.vol-a.vol)[0];
+  h+=kop('Vragen')+'<div class="stats">'+
+    kaart(ms?pc(ms.pct):'–','Moeilijkste vraag',ms?qn(ms):'Nog niets nagekeken')+
+    kaart(mk?pc(mk.pct):'–','Makkelijkste vraag',mk?qn(mk):'Nog niets nagekeken')+
+    kaart(meest?meest.vol:0,'Vaakst helemaal goed',meest&&meest.vol?qn(meest):'')+
+    kaart(nooit,'Door niemand goed','Geen enkel team alle punten')+
+    kaart(ieder,'Door iedereen goed','Alle teams alle punten')+
+    kaart(pc(B.reduce((s,q)=>s+q.w,0)/(B.reduce((s,q)=>s+q.m,0)||1)),'Gemiddelde score','Over alle vragen')+'</div>'+
+    '<div class="stats lists">'+lijst('Top 5 moeilijkste',S2.slice(0,5))+lijst('Top 5 makkelijkste',S2.slice(-5).reverse())+'</div>';
+  // rubrieken en soorten vragen
+  const agg=f=>{const o={};for(const q of B){const k=f(q);o[k]=o[k]||{w:0,m:0};o[k].w+=q.w;o[k].m+=q.m}return o};
+  const R=agg(q=>q.r.id),RS=Object.entries(R).map(([id,x])=>({r:rub(id),p:x.w/x.m})).sort((a,b)=>a.p-b.p),SO=agg(q=>q.v.soort);
+  const rn=x=>`${code(x.r)} · ${esc(x.r.naam)}`;
+  const jt={};T.forEach(t=>{const j=jokerOf(t.nr);if(j)jt[j]=(jt[j]||0)+1});const pj=Object.entries(jt).sort((a,b)=>b[1]-a[1])[0];
+  h+=kop('Rubrieken')+'<div class="stats">'+
+    kaart(RS[0]?pc(RS[0].p):'–','Moeilijkste rubriek',RS[0]?rn(RS[0]):'')+
+    kaart(RS.length?pc(RS[RS.length-1].p):'–','Makkelijkste rubriek',RS.length?rn(RS[RS.length-1]):'')+
+    kaart(pc(SO.antwoord&&SO.antwoord.w/SO.antwoord.m),'Antwoordvragen','Gemiddelde score')+
+    kaart(pc(SO.creatief&&SO.creatief.w/SO.creatief.m),'Creatieve opdrachten','Gemiddelde score')+
+    kaart(pj?pj[1]+'×':'–','Populairste joker',pj?`${code(rub(pj[0]))} · ${esc(rub(pj[0]).naam)}`:'Nog geen jokers')+'</div>';
+  // punten
+  const totZ=T.reduce((s,t)=>s+teamTot(t.nr,true),0),totJ=T.reduce((s,t)=>s+teamTot(t.nr),0);
+  h+=kop('Punten')+'<div class="stats">'+
+    kaart(nl(totZ),'Punten uitgedeeld','Zonder joker')+
+    kaart(nl(totJ-totZ),'Extra door jokers','Bovenop de gewone punten')+
+    kaart(nl(Math.round(totJ/T.length)),'Gemiddeld per team','Met joker')+'</div>';
+  // teams: pas na het tonen van de winnaar, anders verklappen we de uitslag
+  if(!cfg().onthuld)return h+kop('Teams')+'<p class="mut">De teamstatistieken verschijnen zodra de winnaar is getoond.</p>';
+  const L=ranking(false),mx=(a,f)=>a.reduce((b,x)=>f(x)>f(b)?x:b,a[0]);
+  let hr=null;for(const r of rubs())for(const t of T){const s=rubTot(r.id,t.nr);if(!hr||s>hr.s)hr={r,t,s}}
+  const jw=mx(T,t=>{const j=jokerOf(t.nr);return j?rubTot(j,t.nr):-1}),jwj=jokerOf(jw.nr);
+  const vg=mx(T,t=>B.filter(q=>q.goed.includes(t.nr)).length),vgn=B.filter(q=>q.goed.includes(vg.nr)).length;
+  const cr=mx(T,t=>creaTot(t.nr));
+  h+=kop('Teams')+'<div class="stats">'+
+    kaart(L.length>1?nl(L[0].tot-L[1].tot):'–','Verschil 1 en 2',L.length>1?`${nm(L[0])} vóór ${nm(L[1])}`:'')+
+    kaart(hr?nl(hr.s):'–','Hoogste rubriekscore',hr?`${nm(hr.t)} · ${esc(hr.r.naam)}`:'')+
+    kaart(jwj?'+'+nl(rubTot(jwj,jw.nr)):'–','Slimste joker',jwj?`${nm(jw)} · ${esc(rub(jwj).naam)}`:'Nog geen jokers')+
+    kaart(vgn,'Meeste vragen helemaal goed',nm(vg))+
+    kaart(nl(creaTot(cr.nr)),'Meest creatief',nm(cr))+'</div>';
+  return h}
 
 /* ---------- winnaar tonen (alleen beheerder) ---------- */
 // schermvullende show bovenop de pagina: aftellen 10 → 1, plaats 3 en 2, tromgeroffel, winnaar met confetti
