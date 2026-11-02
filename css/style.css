@@ -142,6 +142,8 @@ col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{w
 .grid-wrap.nk{background:var(--nk-cell);border-color:var(--nk-line);container-type:inline-size;max-height:none}
 .grid.nk{color:var(--nk-ink);--w2:max(var(--w2min), calc(100cqw - var(--w1) - var(--w3) - 28px - var(--nt) * var(--wt) - 1px))}
 .main:has(.grid-wrap.nk){padding-bottom:16px}
+.grid.nk{user-select:none;-webkit-user-select:none} /* tekst niet selecteerbaar; invulvakjes wel */
+.grid.nk .gi{user-select:text;-webkit-user-select:text}
 .grid.nk th,.grid.nk td{background:var(--nk-cell);border-color:var(--nk-line)}
 .grid.nk thead th{background:var(--nk-head);color:var(--nk-head-ink)}
 .grid.nk thead .tnm{color:inherit;opacity:.75}
