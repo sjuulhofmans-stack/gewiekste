@@ -46,5 +46,6 @@ Log daarna in als beheerder. Ga naar **Instellingen → Toegang bestuur** en zet
 - Elke rubriek heeft 7 vragen of opdrachten en maximaal 1000 punten (aan te passen bij Instellingen).
 - Goed/fout-vragen: score van 0 tot het maximum van die regel. Deelpunten mogen.
 - Creatieve opdrachten: meerdere juryleden geven een score. Het gemiddelde wordt naar boven afgerond.
-- Joker: verdubbelt de score van één rubriek. Niet op de sponsorrubriek of de geheime opdracht.
+- Joker: verdubbelt de score van één rubriek. Niet op de sponsorrubriek, de geheime opdracht of Overige.
+- Overige: vaste rubriek (niet te verwijderen) voor extra punten die nog verdeeld moeten worden.
 - Gelijke stand: het team met de hoogste score op de creatieve opdrachten staat hoger.

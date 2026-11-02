@@ -27,8 +27,11 @@ const OWL='<img class="owl" src="img/uil.png" alt="Logo Genneps Gewiekste">';
 const DEF={naam:'Genneps Gewiekste',editie:'6e editie',jury:3,rubrieken:[
   {id:'sp',naam:'Sponsorrubriek',soort:'sponsor',vragen:7,max:1000},
   ...Array.from({length:10},(_,i)=>({id:'r'+(i+1),naam:'Rubriek '+(i+2),soort:'normaal',vragen:7,max:1000})),
-  {id:'gh',naam:'Geheime opdracht',soort:'geheim',vragen:1,max:1000}
+  {id:'gh',naam:'Geheime opdracht',soort:'geheim',vragen:1,max:1000},
+  {id:'ov',naam:'Overige',soort:'overig',vragen:1,max:1000}
 ]};
+// vaste rubriek Overige (extra punten) altijd achteraan, ook in oudere opgeslagen instellingen
+function metOverig(c){if(c&&Array.isArray(c.rubrieken)&&!c.rubrieken.some(r=>r.soort==='overig'))c.rubrieken.push({id:'ov',naam:'Overige',soort:'overig',vragen:1,max:1000});return c}
 const TABS=[['vragen','Vragen & antwoorden'],['nakijken','Nakijken'],['overzicht','Totaaloverzicht'],['uitslag','Uitslag']];
 const BTABS=[['teams','Teams'],['jokers','Jokers'],['instellingen','Instellingen']];
 
@@ -52,8 +55,9 @@ function store(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 function cfg(){return S.config||DEF}
 function rubs(){return Array.isArray(cfg().rubrieken)?cfg().rubrieken:DEF.rubrieken}
 function rub(id){return rubs().find(r=>r.id===id)}
-// rubrieknummer: de sponsorrubriek telt mee (die is rubriek 1), de geheime opdracht is G
-function code(r){if(!r)return'?';if(r.soort==='geheim')return'G';let n=0;for(const x of rubs()){if(x.soort!=='geheim'){n++;if(x.id===r.id)return String(n)}}return'?'}
+// rubrieknummer: de sponsorrubriek telt mee (die is rubriek 1), de geheime opdracht is G, overige is O
+const VAST={geheim:'G',overig:'O'};
+function code(r){if(!r)return'?';if(VAST[r.soort])return VAST[r.soort];let n=0;for(const x of rubs()){if(!VAST[x.soort]){n++;if(x.id===r.id)return String(n)}}return'?'}
 function jury(){return Math.max(1,Math.min(6,+cfg().jury||3))}
 function teams(){return Object.entries(S.teams||{}).map(([nr,naam])=>({nr:+nr,naam:String(naam||'')})).filter(t=>t.nr>0).sort((a,b)=>a.nr-b.nr)}
 function teamLabel(t){return 'Team '+t.nr+(t.naam?' – '+t.naam:'')}
@@ -258,7 +262,7 @@ function vTeams(){const T=teams();
   h+=`</div><div class="panel"><h3>Lijst plakken</h3><div class="pad"><p class="mut" style="margin:0">Eén teamnaam per regel. Ze krijgen de volgende vrije nummers.</p><textarea class="inp" id="bulk" rows="8" placeholder="De Nije Mixers&#10;Schele Waazel&#10;…"></textarea><button class="btn primary" data-act="team-bulk">Toevoegen</button></div></div></div>`;
   return h}
 function vJokers(){const T=teams();const N=rubs().filter(r=>r.soort==='normaal');const n=T.filter(t=>jokerOf(t.nr)).length;
-  let h=`<div class="rhead"><div><h2>Jokers</h2><p class="mut">Elk team zet vóór de kwis één joker in. De score van die rubriek telt dubbel. Niet mogelijk op de sponsorrubriek en de geheime opdracht.</p></div><span class="badge ${n===T.length&&T.length?'ok':'warn'}">${n} van ${T.length} teams hebben een joker</span></div>`;
+  let h=`<div class="rhead"><div><h2>Jokers</h2><p class="mut">Elk team zet vóór de kwis één joker in. De score van die rubriek telt dubbel. Niet mogelijk op de sponsorrubriek, de geheime opdracht en Overige.</p></div><span class="badge ${n===T.length&&T.length?'ok':'warn'}">${n} van ${T.length} teams hebben een joker</span></div>`;
   if(!T.length)return h+empty('Nog geen teams','Maak eerst de teams aan onder Teams.');
   h+=`<div class="panel"><div class="lrow jk lhead"><span style="text-align:center">Nr</span><span>Team</span><span>Joker op rubriek</span></div>`;
   T.forEach(t=>{const cur=jokerOf(t.nr)||'';
@@ -274,7 +278,7 @@ function vInst(){const c=cfg();const R=rubs();
   ${S.backend==='firebase'?`<div class="panel"><h3>Toegang bestuur</h3><div class="pad"><p class="mut" style="margin:0">Google-adressen van bestuursleden die mogen invullen, één per regel. Wordt automatisch opgeslagen zodra je buiten het vak klikt.</p><textarea class="inp" id="toegang" data-act="toegang" rows="6" placeholder="naam@gmail.com">${esc((S.toegang||[]).join('\n'))}</textarea></div></div>`:''}
   <div class="panel"><h3>Rubrieken</h3><div class="lrow rb lhead"><span style="text-align:center">#</span><span>Naam</span><span class="soort">Soort</span><span>Vragen</span><span>Max punten</span><span></span></div>`;
   R.forEach((r,i)=>{const ck='drb_'+r.id;const on=S.confirm===ck;
-    h+=`<div class="lrow rb"><span class="ln">${code(r)}</span><input class="inp" id="rn_${r.id}" data-act="rb" data-f="naam" data-i="${i}" value="${esc(r.naam)}" aria-label="Naam rubriek ${code(r)}"><span class="soort mut">${{sponsor:'Sponsor · geen joker',geheim:'Geheim · geen joker',normaal:'Normaal'}[r.soort]||''}</span>
+    h+=`<div class="lrow rb"><span class="ln">${code(r)}</span><input class="inp" id="rn_${r.id}" data-act="rb" data-f="naam" data-i="${i}" value="${esc(r.naam)}" aria-label="Naam rubriek ${code(r)}"><span class="soort mut">${{sponsor:'Sponsor · geen joker',geheim:'Geheim · geen joker',overig:'Extra punten · geen joker',normaal:'Normaal'}[r.soort]||''}</span>
     <input class="inp num" id="rv_${r.id}" data-act="rb" data-f="vragen" data-i="${i}" inputmode="numeric" value="${r.vragen}" aria-label="Aantal vragen"><input class="inp num" id="rm_${r.id}" data-act="rb" data-f="max" data-i="${i}" inputmode="numeric" value="${r.max}" aria-label="Maximaal aantal punten">
     ${r.soort==='normaal'?`<button class="ibtn${on?' danger':''}" data-act="rb-del" data-i="${i}" data-ck="${ck}" aria-label="Rubriek verwijderen">${on?'Zeker?':'✕'}</button>`:'<span></span>'}</div>`});
   h+=`<div class="efoot" style="padding-left:12px"><button class="btn" data-act="rb-add">+ Rubriek toevoegen</button><span class="mut">Een verwijderde rubriek verdwijnt uit de uitslag. Ingevulde punten blijven bewaard.</span></div></div>`;
@@ -345,7 +349,7 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='team-del'){if(!askConfirm(el.dataset.ck))return;const t=clone(S.teams);delete t[el.dataset.nr];saveTeams(t);return}
   if(a==='team-bulk'){const ta=document.getElementById('bulk');const names=ta.value.split('\n').map(s=>s.trim()).filter(Boolean);if(!names.length){toast('Plak eerst één of meer teamnamen.',true);return}
     const t=clone(S.teams);let nr=Math.max(0,...Object.keys(t).map(Number));for(const n of names){if(nr>=99)break;t[++nr]=n}dirty.delete('bulk');ta.value='';saveTeams(t);toast(names.length+' teams toegevoegd.');return}
-  if(a==='rb-add'){const c=clone(cfg());let k=1;while(c.rubrieken.some(r=>r.id==='r'+k))k++;const gi=c.rubrieken.findIndex(r=>r.soort==='geheim');
+  if(a==='rb-add'){const c=clone(cfg());let k=1;while(c.rubrieken.some(r=>r.id==='r'+k))k++;const gi=c.rubrieken.findIndex(r=>VAST[r.soort]);
     const nr={id:'r'+k,naam:'Nieuwe rubriek',soort:'normaal',vragen:7,max:1000};if(gi<0)c.rubrieken.push(nr);else c.rubrieken.splice(gi,0,nr);S.pf='rn_'+nr.id;saveConfig(c);return}
   if(a==='rb-del'){if(!askConfirm(el.dataset.ck))return;const c=clone(cfg());c.rubrieken.splice(+el.dataset.i,1);saveConfig(c);return}
 });
@@ -355,7 +359,7 @@ window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if([...
 function gotFresh(){if(!S.fresh){S.fresh=true;S.loadSlow=false;setStatus()}}
 function subscribe(){if(subscribed)return;subscribed=true;
   const err=e=>{if(e&&e.code==='permission-denied'){S.noAccess=true;S.canWrite=false}else S.loadSlow=true;schedule()};
-  db.doc('beheer/config').onSnapshot(s=>{const d=s.exists?s.data():null;S.config=d&&Array.isArray(d.rubrieken)?d:null;VC={};if(!s.metadata.fromCache)gotFresh();schedule()},err);
+  db.doc('beheer/config').onSnapshot(s=>{const d=s.exists?s.data():null;S.config=d&&Array.isArray(d.rubrieken)?metOverig(d):null;VC={};if(!s.metadata.fromCache)gotFresh();schedule()},err);
   db.doc('beheer/teams').onSnapshot(s=>{S.teams=(s.exists&&s.data().teams)||{};schedule()},err);
   db.doc('beheer/jokers').onSnapshot(s=>{S.jokers=(s.exists&&s.data().j)||{};schedule()},err);
   if(S.isOwner&&S.backend==='firebase')db.doc('beheer/toegang').onSnapshot(s=>{S.toegang=(s.exists&&s.data().emails)||[];schedule()},err);
