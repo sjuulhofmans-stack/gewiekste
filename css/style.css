@@ -59,8 +59,6 @@ button,select,input,textarea{font:inherit;color:inherit}
 .brand p{margin:0;font-size:.9rem;opacity:.75}
 .top-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 .role{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent)}
-/* vaste breedte, ook als er niets staat: anders verspringen de tabbladen bij elke keer "Opslaan…" */
-.status{font-size:.9rem;opacity:.85;width:7.5em;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* tabbladen als losse knoppen; het actieve tabblad is licht gevuld */
 .tabs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tab{border:1px solid color-mix(in srgb,var(--night-ink) 28%,transparent);background:color-mix(in srgb,var(--night-ink) 8%,transparent);color:var(--night-ink);font-weight:700;padding:9px 16px;border-radius:9px;cursor:pointer;min-height:44px}

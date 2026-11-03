@@ -44,7 +44,7 @@ function nakijkenAan(){return cfg().nakijken===true}
 function mijnTabs(){return S.isOwner?TABS:TABS.filter(t=>t[0]==='vragen'||(t[0]==='nakijken'&&nakijkenAan()))}
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
-  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],dbOk:null,loadSlow:false,saving:0,
+  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],dbOk:null,loadSlow:false,
   tab:'vragen',rid:null,vq:1,mode:'raster',team:null,confirm:null,pf:null};
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
@@ -107,12 +107,11 @@ function ranking(zonderJ){const L=teams().map(t=>({...t,tot:teamTot(t.nr,zonderJ
   L.forEach((x,i)=>{if(i===0||x.tot!==L[i-1].tot||x.crea!==L[i-1].crea)p=i+1;x.place=p});return L}
 
 /* ---------- opslaan ---------- */
-function setStatus(){const el=document.getElementById('status');if(el)el.textContent=statusTxt()}
-function statusTxt(){if(S.needLogin)return'Niet ingelogd';if(S.noAccess)return'Geen toegang';if(S.saving>0)return'Opslaan…';if(S.backend==='lokaal')return'Opgeslagen ✓';return S.fresh?'':'Laden…'}
 // naar een vakje springen zonder dat de pagina verschuift: alleen scrollen als het vakje buiten beeld staat
 function focusSel(el){el.focus({preventScroll:true});el.scrollIntoView({block:'nearest',inline:'nearest'});if(el.select)el.select()}
-function enqueue(path,fn){if(!db)return;S.saving++;setStatus();
-  Q[path]=(Q[path]||Promise.resolve()).then(fn).catch(onErr).finally(()=>{S.saving--;setStatus()})}
+// opslaan gebeurt stil op de achtergrond; alleen bij een fout verschijnt een melding
+function enqueue(path,fn){if(!db)return;
+  Q[path]=(Q[path]||Promise.resolve()).then(fn).catch(onErr)}
 function onErr(e){const c=e&&e.code;
   if(c==='permission-denied'||c==='invalid_argument'){S.canWrite=false;toast('Opslaan lukte niet: je hebt geen rechten om dit te wijzigen. Vraag de beheerder om toegang.',true);schedule()}
   else if(c==='resource-exhausted'||c==='quota_exceeded')toast('De opslag zit (tijdelijk) aan zijn limiet. Probeer het later opnieuw.',true);
@@ -189,7 +188,7 @@ function header(){const c=cfg();
   const role=S.backend==='lokaal'?'Lokaal testen':S.isOwner?'Beheerder':(S.dbOk&&S.canWrite?'Bestuurslid':'Alleen lezen');
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
-  <div class="head-r"><div class="top-right"><span class="role">${role}</span><span id="status" class="status" aria-live="polite">${statusTxt()}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
+  <div class="head-r"><div class="top-right"><span class="role">${role}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
   ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':mijnTabs().map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
 // vaste meldingen als [sleutel, soort, tekst]; getoond als kaartje rechtsonder
 function notices(){const h=[];
@@ -624,7 +623,7 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if([...TABS,...BTABS].some(t=>t[0]===h)){S.tab=h;render()}});
 
 /* ---------- opstarten ---------- */
-function gotFresh(){if(!S.fresh){S.fresh=true;S.loadSlow=false;setStatus()}}
+function gotFresh(){if(!S.fresh){S.fresh=true;S.loadSlow=false;schedule()}}
 // scores alleen ophalen als je mag nakijken (beheerder altijd, bestuur zodra Nakijken aan staat)
 let scoreSub=null;
 function volgScores(){if(!db)return;const mag=S.isOwner||nakijkenAan();
