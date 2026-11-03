@@ -177,13 +177,17 @@ function notices(){let h='';
 function vLogin(){const N=S.namen||[];
   const kies=N.length?`<p class="mut">Kies je naam en vul het wachtwoord van het bestuur in. Alles wordt direct opgeslagen.</p>
     <label class="fld"><span>Je naam</span><select class="inp" id="ln_naam" data-act="ln-naam"><option value="">Kies je naam…</option>${N.map(n=>`<option value="${esc(n)}"${n===S.naam?' selected':''}>${esc(n)}</option>`).join('')}</select></label>
-    <label class="fld"><span>Wachtwoord</span><input class="inp" id="ln_ww" type="password" autocomplete="current-password"></label>
+    <div class="fld"><label for="ln_ww">Wachtwoord</label>${wwVeld('ln_ww','','autocomplete="current-password"')}</div>
     <button class="btn primary big" data-act="login-bestuur">Inloggen</button>`
     :'<p class="mut">De beheerder heeft nog geen bestuursleden ingesteld.</p>';
   return `<div class="login">${OWL}<h2>Welkom bij de uitslagen</h2>${kies}<div class="login-beh"><p class="mut">Ben je de beheerder?</p><button class="btn" data-act="login">Inloggen met Google</button></div></div>`}
 function view(){if(S.needLogin)return vLogin();if(S.noAccess)return '';let t=S.tab;if(BTABS.some(x=>x[0]===t)&&!S.isOwner)t='nakijken';
   return({nakijken:vNakijken,vragen:vVragen,overzicht:vOverzicht,uitslag:vUitslag,stats:vStats,teams:vTeams,jokers:vJokers,instellingen:vInst}[t]||vNakijken)()}
 function empty(t,p){return `<div class="empty"><h3>${t}</h3><p>${p}</p></div>`}
+// wachtwoordvak met een knop om te wisselen tussen bolletjes en leesbare tekst
+const toonWw={};
+function wwVeld(id,val,extra){const t=!!toonWw[id];
+  return `<div class="ww-rij"><input class="inp" id="${id}" type="${t?'text':'password'}" value="${esc(val)}" spellcheck="false" ${extra}><button type="button" class="btn" data-act="toon-ww" data-for="${id}" aria-pressed="${t}">${t?'Verbergen':'Tonen'}</button></div>`}
 // rubriekkeuze: één uitklapmenu in plaats van een rij knoppen
 function rubSelect(){ensureRid();return `<label class="rubsel"><span>Rubriek</span><select class="inp sel-rub" id="rubsel" data-act="rub">${rubs().map(r=>`<option value="${r.id}"${r.id===S.rid?' selected':''}>${code(r)} · ${esc(r.naam)}</option>`).join('')}</select></label>`}
 const dis=()=>S.canWrite&&S.dbOk?'':' disabled';
@@ -463,7 +467,7 @@ function vToegang(){const B=S.bestuur||{};const A=(S.aanm||[]).slice().sort((a,b
   return `<div class="panel"><h3>Toegang bestuur</h3><div class="pad">
     <p class="mut" style="margin:0">Bestuursleden kiezen op het inlogscherm hun naam en vullen het algemene wachtwoord in.</p>
     <label class="fld"><span>Namen van bestuursleden (één per regel)</span><textarea class="inp" id="namen" data-act="namen" rows="6" placeholder="Piet&#10;Marieke&#10;…">${esc((S.namen||[]).join('\n'))}</textarea></label>
-    <label class="fld"><span>Algemeen wachtwoord (minstens 6 tekens)</span><input class="inp" id="bww" value="${esc(B.ww||'')}" autocomplete="off" spellcheck="false"></label>
+    <div class="fld"><label for="bww">Algemeen wachtwoord (minstens 6 tekens)</label>${wwVeld('bww',B.ww||'','autocomplete="new-password"')}</div>
     <div class="efoot" style="padding:0;border:0"><button class="btn primary" data-act="bww">Wachtwoord instellen</button><span class="mut">${B.uid?'Het wachtwoord is ingesteld. Wijzig je het, dan moet iedereen opnieuw inloggen.':'Nog geen wachtwoord ingesteld: bestuursleden kunnen nog niet inloggen.'}</span></div>
     <label class="fld"><span>Extra: Google-adressen met toegang (mag leeg blijven)</span><textarea class="inp" id="toegang" data-act="toegang" rows="3" placeholder="naam@gmail.com">${esc((S.toegang||[]).join('\n'))}</textarea></label>
   </div></div>
@@ -533,6 +537,9 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
   if(a==='winnaar'){toonWinnaar();return}
+  // direct in de pagina wisselen (niet opnieuw opbouwen), zodat wat al getypt is blijft staan
+  if(a==='toon-ww'){const id=el.dataset.for;const inp=document.getElementById(id);if(!inp)return;const t=toonWw[id]=!toonWw[id];
+    inp.type=t?'text':'password';el.textContent=t?'Verbergen':'Tonen';el.setAttribute('aria-pressed',t);inp.focus();return}
   if(a==='verberg'){const c=clone(cfg());c.onthuld=false;saveConfig(c);toast('De uitslag is weer verborgen.');return}
   if(a==='team-prev'||a==='team-next'){const T=teams();const i=T.findIndex(t=>t.nr===S.team)+(a==='team-next'?1:-1);if(T[i]){S.team=T[i].nr;store('gg_team',S.team)}render();window.scrollTo(0,0);return}
   if(a==='set'){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.dataset.rg,val=+el.dataset.v;if(raw(rid,nr,rg)!==val)saveScore(rid,nr,rg,val);return}
