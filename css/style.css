@@ -80,9 +80,6 @@ button,select,input,textarea{font:inherit;color:inherit}
 .btn:hover:not(:disabled){border-color:var(--ink-2)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn.sm{height:40px;padding:0 10px;width:72px}
-.btn.good.on{background:var(--good);border-color:var(--good);color:var(--surface)}
-.btn.bad.on{background:var(--bad);border-color:var(--bad);color:var(--surface)}
 .ibtn{height:40px;width:76px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;font-weight:700;color:var(--ink-2)}
 .ibtn.danger{background:var(--bad);border-color:var(--bad);color:var(--surface)}
 .inp{height:40px;box-sizing:border-box;width:100%;border:1px solid var(--line);border-radius:6px;background:var(--surface);padding:0 10px;min-width:0}
@@ -165,25 +162,7 @@ col.wsp{width:28px}
 .gi{display:block;width:100%;height:calc(var(--row) - 1px);border:0;background:transparent;text-align:center;font-variant-numeric:tabular-nums;padding:0}
 .gi:focus{outline:3px solid var(--accent);outline-offset:-3px;background:var(--surface)}
 
-/* per team */
-.teambar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.sel-team{width:auto;min-width:260px;max-width:100%;height:44px;font-weight:700}
-.qcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.qhead{display:grid;grid-template-columns:64px minmax(0,1fr) auto;align-items:center;min-height:var(--rowT);background:var(--surface-2);padding-right:14px;gap:8px}
-.qc{font-family:var(--font-display);font-weight:800;text-align:center;font-size:1.05rem}
-.qt{font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qs{font-weight:700;font-variant-numeric:tabular-nums}
-.qrow{display:grid;grid-template-columns:64px minmax(0,1fr) 92px 296px;align-items:center;height:var(--rowT);border-top:1px solid var(--line);padding-right:12px;gap:8px}
-.ql{text-align:center;font-weight:700;color:var(--ink-2)}
 .qa{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.qm{text-align:right;color:var(--ink-2);font-variant-numeric:tabular-nums;white-space:nowrap}
-.qctl{display:flex;gap:8px;justify-content:flex-end;align-items:center}
-.qctl .sc{width:80px}
-.qctl .jy{width:64px}
-.qctl .gem{width:68px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
-.sc.v-max{background:var(--good-soft)} .sc.v-zero{background:var(--bad-soft)} .sc.v-part{background:var(--warn-soft)}
-.tcard{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;justify-content:flex-end;background:var(--accent-soft);border-radius:10px;padding:14px 18px;font-size:1.1rem}
-.tcard b{font-variant-numeric:tabular-nums}
 
 /* vragen & antwoorden: vraag voor vraag. Links de lijst met vragen (bolletje = stand), rechts één vraag. */
 .vq-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start}
@@ -320,9 +299,6 @@ body.show-open{overflow:hidden}
 @keyframes mld-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 @media (max-width:760px){
-  .qrow{grid-template-columns:44px minmax(0,1fr) 70px;grid-template-rows:44px 52px;height:96px;padding-right:10px}
-  .qrow .qctl{grid-column:1/-1;justify-content:flex-end}
-  .qhead{grid-template-columns:44px minmax(0,1fr) auto}
   .vq-grid{grid-template-columns:1fr}
   .vq-nav{flex-direction:row;flex-wrap:wrap}
   .vq-nav button{grid-template-columns:auto 14px;padding:0 12px;border-top:0;border-right:1px solid var(--line)}
@@ -342,9 +318,7 @@ body.show-open{overflow:hidden}
   .jrow{grid-template-columns:minmax(0,1fr) 150px}
   .cols2,.formgrid{grid-template-columns:1fr}
   col.wu{width:200px}
-  .sel-team{min-width:0;flex:1 1 100%;order:-1}
   .rubsel{flex:1 1 100%}.sel-rub{min-width:0;flex:1}
-  .teambar .btn{flex:1}
 }
 @media (prefers-reduced-motion:reduce){.mld{animation:none}}
 

@@ -49,7 +49,7 @@ const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
 
-try{S.naam=localStorage.getItem('gg_naam')||'';S.rid=localStorage.getItem('gg_rid');S.mode=localStorage.getItem('gg_mode')||'raster';S.uj=localStorage.getItem('gg_uj')||'met';const t=+localStorage.getItem('gg_team');if(t)S.team=t;}catch(e){}
+try{S.naam=localStorage.getItem('gg_naam')||'';S.rid=localStorage.getItem('gg_rid');S.uj=localStorage.getItem('gg_uj')||'met';}catch(e){}
 const h0=location.hash.slice(1); if([...TABS,...BTABS].some(t=>t[0]===h0))S.tab=h0;
 
 /* ---------- helpers ---------- */
@@ -218,10 +218,10 @@ const dis=()=>S.canWrite&&S.dbOk?'':' disabled';
 
 /* ---------- Nakijken ---------- */
 function vNakijken(){ensureRid();const r=rub(S.rid);const T=teams();
-  let h=`<div class="toolbar">${rubSelect()}<div class="seg" role="group" aria-label="Weergave"><button data-act="mode" data-m="raster" aria-pressed="${S.mode!=='team'}">Alle teams (raster)</button><button data-act="mode" data-m="team" aria-pressed="${S.mode==='team'}">Per team</button></div>
+  let h=`<div class="toolbar">${rubSelect()}
   <p class="hint">Typ een getal, of <kbd>g</kbd> = goed (alle punten) en <kbd>f</kbd> = fout (0). Met <kbd>Enter</kbd> ga je naar de volgende regel, met de <kbd>pijltjes</kbd> naar elk vakje.</p></div>`;
   if(!T.length)return h+empty('Er zijn nog geen teams','De beheerder maakt de teams aan onder Teams. Daarna verschijnen ze hier.');
-  return h+(S.mode==='team'?perTeam(r,T):raster(r,T))}
+  return h+raster(r,T)}
 
 // jl = één jurylid uit juryOf() bij creatieve opdrachten, anders 0
 function scoreInput(pre,r,t,v,g,jl,extra){const x=raw(r.id,t.nr,g.id);
@@ -249,26 +249,6 @@ function raster(r,T){const V=vragen(r.id);const isN=r.soort==='normaal';const pc
   if(anyJ)h+=`<tr class="jrow"><td class="stk c1">★</td><td class="stk c2 tl">Met joker (×2)</td><td class="stk c3"></td>${SP}${T.map(t=>`<td>${jokerOf(t.nr)===r.id?rubTot(r.id,t.nr)*2:''}</td>`).join('')}</tr>`;
   return h+'</tfoot></table></div>'}
 
-function perTeam(r,T){if(!T.some(t=>t.nr===S.team))S.team=T[0].nr;const t=T.find(x=>x.nr===S.team);const idx=T.indexOf(t);
-  const V=vragen(r.id);const isJ=jokerOf(t.nr)===r.id;const[d,a]=progress(r.id,t.nr);const pc=code(r);
-  let h=`<div class="teambar"><button class="btn" data-act="team-prev"${idx===0?' disabled':''} aria-label="Vorig team">◀ Vorige</button>
-  <select id="teamsel" class="inp sel-team" data-act="teamsel" aria-label="Kies team">${T.map(x=>`<option value="${x.nr}"${x.nr===t.nr?' selected':''}>Team ${x.nr}</option>`).join('')}</select>
-  <button class="btn" data-act="team-next"${idx===T.length-1?' disabled':''} aria-label="Volgend team">Volgende ▶</button>
-  <span class="badge ${d===a?'ok':'warn'}">${d} van ${a} ingevuld</span>${isJ?'<span class="badge joker">★ Joker: deze rubriek telt dubbel</span>':''}</div>`;
-  V.forEach((v,i)=>{const vs=vraagScore(r.id,t.nr,v);
-    h+=`<section class="qcard"><div class="qhead"><span class="qc">${pc}.${i+1}</span><span class="qt" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</span><span class="qs">${vs==null?'–':vs} / ${v.punten}</span></div>`;
-    v.regels.forEach((g,k)=>{const L=lab(v,k)||'•';const w=waarde(r.id,t.nr,v,g);
-      if(v.soort==='creatief'){let ins='';for(const jl of juryOf(r,v))ins+=scoreInput('p',r,t,v,g,jl,'inp num jy');
-        h+=`<div class="qrow"><span class="ql">${L}</span><span class="qa" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Beoordeling</i>'}</span><span class="qm">0–${g.punten}</span><span class="qctl">${ins}<span class="gem" title="Gemiddelde, naar boven afgerond">= ${w==null?'–':w}</span></span></div>`;
-      }else{const dd=dis();
-        h+=`<div class="qrow"><span class="ql">${L}</span><span class="qa" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Antwoord nog niet ingevuld</i>'}</span><span class="qm">${g.punten} pnt</span><span class="qctl">
-        <button class="btn sm bad${w===0?' on':''}" data-act="set" data-v="0" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${dd}>Fout</button>
-        <button class="btn sm good${g.punten>0&&w===g.punten?' on':''}" data-act="set" data-v="${g.punten}" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${dd||(g.punten?'':' disabled')}>Goed</button>
-        ${scoreInput('p',r,t,v,g,0,'inp sc '+cls(w,g.punten))}</span></div>`}});
-    h+='</section>'});
-  const tot=rubTot(r.id,t.nr);
-  h+=`<div class="tcard"><span>Totaal ${esc(r.naam)}: <b>${tot}</b> / ${r.max}</span>${isJ?`<span class="badge joker">Met joker: ${tot*2}</span>`:''}</div>`;
-  return h}
 
 /* ---------- Vragen & antwoorden ---------- */
 function somBadge(som,max){if(som===max)return `<span class="badge ok">Totaal ${som} / ${max} ✓</span>`;
@@ -540,13 +520,12 @@ function commitScore(el){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.datase
   if(p.err){toast(p.err,true);el.value=cur==null?'':cur;return false}
   if(p.v===cur){el.value=cur==null?'':cur;return true}
   saveScore(rid,nr,rg,j?{[j]:p.v}:p.v);return true}
-function nextScoreInput(el){const all=[...$app.querySelectorAll('input[data-act="score"]')];
-  const list=el.classList.contains('gi')?all.filter(x=>x.dataset.nr===el.dataset.nr&&x.classList.contains('gi')):all;
-  const i=list.indexOf(el);return list[i+1]||null}
-// pijltjestoetsen: in het raster omhoog/omlaag binnen de teamkolom, links/rechts binnen de regel; per team gewoon vorige/volgende
-function arrowScoreInput(el,key){const all=[...$app.querySelectorAll('input[data-act="score"]')];
-  const grid=el.classList.contains('gi');const vert=key==='ArrowUp'||key==='ArrowDown';const d=key==='ArrowUp'||key==='ArrowLeft'?-1:1;
-  const list=!grid?all:vert?all.filter(x=>x.dataset.nr===el.dataset.nr&&x.classList.contains('gi')):[...el.closest('tr').querySelectorAll('input[data-act="score"]')];
+// Enter: volgende vakje omlaag in dezelfde teamkolom
+function nextScoreInput(el){const list=[...$app.querySelectorAll('input[data-act="score"]')].filter(x=>x.dataset.nr===el.dataset.nr);
+  return list[list.indexOf(el)+1]||null}
+// pijltjestoetsen: omhoog/omlaag binnen de teamkolom, links/rechts binnen de regel
+function arrowScoreInput(el,key){const vert=key==='ArrowUp'||key==='ArrowDown';const d=key==='ArrowUp'||key==='ArrowLeft'?-1:1;
+  const list=vert?[...$app.querySelectorAll('input[data-act="score"]')].filter(x=>x.dataset.nr===el.dataset.nr):[...el.closest('tr').querySelectorAll('input[data-act="score"]')];
   return list[list.indexOf(el)+d]||null}
 function curVraag(rid,q){return clone(vragen(rid)[q-1])}
 
@@ -566,7 +545,6 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
   if(a==='namen'){const list=[...new Set(v.split('\n').map(x=>x.trim()).filter(Boolean))];saveNamen(list);toast(list.length+(list.length===1?' naam staat':' namen staan')+' op het inlogscherm.');return}
   if(a==='ln-naam'){S.naam=v;return}
   if(a==='rub'){S.rid=v;S.vq=1;store('gg_rid',v);render();return}
-  if(a==='teamsel'){S.team=+v;store('gg_team',v);schedule();return}
   if(a==='vf'){const q=+el.dataset.q,rid=el.dataset.rid;const o=curVraag(rid,q);const f=el.dataset.f;
     if(f==='punten')o.punten=num(v);else o[f]=v;saveVraag(rid,q,o);return}
   if(a==='rf'){const q=+el.dataset.q,rid=el.dataset.rid,k=+el.dataset.k;const o=curVraag(rid,q);if(!o.regels[k])return;
@@ -595,14 +573,11 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
         :c==='geen-oud'?'Het bestuursaccount bestaat al, maar het oude wachtwoord is onbekend. Verwijder het account in Firebase bij Authentication en probeer opnieuw.'
         :c==='auth/weak-password'?'Dit wachtwoord is te zwak. Kies een langer wachtwoord.':'Instellen lukte niet: '+((e&&(e.message||c))||'onbekende fout'),true)});return}
   if(a==='tab'){S.tab=el.dataset.tab;try{history.replaceState(null,'','#'+S.tab)}catch(x){}render();window.scrollTo(0,0);return}
-  if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
   if(a==='vq'){S.vq=+el.dataset.q;render();window.scrollTo(0,0);return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
   if(a==='winnaar'){toonWinnaar();return}
   if(a==='nk-aan'){const c=clone(cfg());c.nakijken=el.dataset.v==='aan';saveConfig(c);toast(c.nakijken?'Nakijken staat aan: het bestuur ziet nu het tabblad Nakijken.':'Nakijken staat uit: het bestuur ziet alleen Vragen & antwoorden.');return}
   if(a==='verberg'){const c=clone(cfg());c.onthuld=false;saveConfig(c);toast('De uitslag is weer verborgen.');return}
-  if(a==='team-prev'||a==='team-next'){const T=teams();const i=T.findIndex(t=>t.nr===S.team)+(a==='team-next'?1:-1);if(T[i]){S.team=T[i].nr;store('gg_team',S.team)}render();window.scrollTo(0,0);return}
-  if(a==='set'){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.dataset.rg,val=+el.dataset.v;if(raw(rid,nr,rg)!==val)saveScore(rid,nr,rg,val);return}
   if(a==='add-regel'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);const id=newId();o.regels.push({id,tekst:'',punten:0});
     if(o.nummering==='enkel'&&o.regels.length>1)o.nummering='abc';S.pf=`e_${rid}_${q}_${id}_t`;saveVraag(rid,q,o);return}
   if(a==='del-regel'){if(!askConfirm(el.dataset.ck))return;const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);o.regels.splice(+el.dataset.k,1);saveVraag(rid,q,o);return}
