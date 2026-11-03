@@ -43,7 +43,7 @@ function mijnTabs(){return S.isOwner?TABS:TABS.filter(t=>t[0]==='vragen'||(t[0]=
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
   isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],dbOk:null,loadSlow:false,saving:0,
-  tab:'vragen',rid:null,mode:'raster',team:null,confirm:null,pf:null};
+  tab:'vragen',rid:null,vq:1,mode:'raster',team:null,confirm:null,pf:null};
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
 
@@ -262,25 +262,34 @@ function perTeam(r,T){if(!T.some(t=>t.nr===S.team))S.team=T[0].nr;const t=T.find
 function somBadge(som,max){if(som===max)return `<span class="badge ok">Totaal ${som} / ${max} ✓</span>`;
   if(som<max)return `<span class="badge warn">Totaal ${som} / ${max} · nog ${max-som} te verdelen</span>`;
   return `<span class="badge bad">Totaal ${som} / ${max} · ${som-max} te veel</span>`}
-function regelBadge(rs,p){if(!p)return '<span class="badge warn">Vul eerst de punten van deze vraag in</span>';
-  if(rs===p)return `<span class="badge ok">Regels samen ${rs} / ${p} ✓</span>`;
-  return `<span class="badge ${rs>p?'bad':'warn'}">Regels samen ${rs} / ${p}</span>`}
+// stand van één vraag: leeg (grijs), klopt (groen), nog niet af (oranje) of te veel punten (rood)
+function vraagStatus(v){const rs=v.regels.reduce((s,g)=>s+g.punten,0);
+  if(!v.titel&&!v.punten&&v.regels.every(g=>!g.tekst&&!g.punten))return['leeg','Nog leeg'];
+  if(!v.punten)return['warn','Vul de punten van de vraag in'];
+  if(rs>v.punten)return['bad',(rs-v.punten)+' punten te veel verdeeld'];
+  if(rs<v.punten)return['warn','Nog '+(v.punten-rs)+' punten verdelen'];
+  if(!v.titel)return['warn','Titel ontbreekt'];
+  if(v.regels.some(g=>!g.tekst))return['warn','Antwoord ontbreekt'];
+  return['ok','✓ Klopt']}
+// vraag voor vraag: links de lijst met vragen, rechts één vraag om in te vullen
 function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som=V.reduce((s,v)=>s+v.punten,0);const max=+r.max||1000;const pc=code(r);const d=dis();
-  let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}</div>`;
-  V.forEach((v,i)=>{const q=i+1;const rs=v.regels.reduce((s,g)=>s+g.punten,0);const base=`data-rid="${r.id}" data-q="${q}"`;
-    const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('')}</select>`;
-    h+=`<section class="qcard"><div class="ehead"><span class="qc">${pc}.${q}</span>
-      <label class="fld"><span>Titel</span><input class="inp" id="e_${r.id}_${q}_titel" data-act="vf" data-f="titel" ${base} value="${esc(v.titel)}" placeholder="Titel van de vraag of opdracht"${d}></label>
-      <div class="flds"><label class="fld"><span>Nakijken</span>${sel('soort',[['antwoord','Goed / fout (antwoorden)'],['creatief','Creatief (jury)']],v.soort)}</label>
-      <label class="fld"><span>Nummering</span>${sel('nummering',[['enkel','Eén antwoord'],['abc','A  B  C'],['123','1  2  3']],v.nummering)}</label>
-      <label class="fld"><span>Punten</span><input class="inp num" id="e_${r.id}_${q}_punten" data-act="vf" data-f="punten" ${base} inputmode="numeric" value="${v.punten||''}" placeholder="0"${d}></label></div></div>
-      <div class="colh"><span></span><span class="tx">${v.soort==='creatief'?'Wat wordt beoordeeld':'Juiste antwoord'}</span><span>Punten</span><span></span></div>`;
-    v.regels.forEach((g,k)=>{const ck='dr_'+r.id+'_'+q+'_'+g.id;const on=S.confirm===ck;
-      h+=`<div class="erow"><span class="ql">${lab(v,k)||'•'}</span>
-        <input class="inp tx" id="e_${r.id}_${q}_${g.id}_t" data-act="rf" data-f="tekst" data-k="${k}" ${base} value="${esc(g.tekst)}" placeholder="${v.soort==='creatief'?'Bijv. filmpje, tekening, creativiteit':'Het juiste antwoord'}" aria-label="Antwoord ${lab(v,k)}"${d}>
-        <input class="inp num" id="e_${r.id}_${q}_${g.id}_p" data-act="rf" data-f="punten" data-k="${k}" ${base} inputmode="numeric" value="${g.punten||''}" placeholder="0" aria-label="Punten ${lab(v,k)}"${d}>
-        <button class="ibtn${on?' danger':''}" data-act="del-regel" data-k="${k}" data-ck="${ck}" ${base} aria-label="Regel verwijderen"${d||(v.regels.length<2?' disabled':'')}>${on?'Zeker?':'✕'}</button></div>`});
-    h+=`<div class="efoot"><button class="btn" data-act="add-regel" ${base}${d}>+ Antwoordregel</button><button class="btn" data-act="verdeel" ${base}${d}>Verdeel ${v.punten||0} punten gelijk</button>${regelBadge(rs,v.punten)}</div></section>`});
+  const q=Math.max(1,Math.min(V.length,S.vq||1));const v=V[q-1];const base=`data-rid="${r.id}" data-q="${q}"`;const st=vraagStatus(v);
+  const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('')}</select>`;
+  let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}</div><div class="vq-grid"><nav class="vq-nav" aria-label="Vragen">`;
+  V.forEach((x,i)=>{h+=`<button data-act="vq" data-q="${i+1}"${i+1===q?' aria-current="true"':''}><span class="nr">${pc}.${i+1}</span><span class="t">${x.titel?esc(x.titel):'Nog leeg'}</span><span class="dot ${vraagStatus(x)[0]}" title="${vraagStatus(x)[1]}"></span></button>`});
+  h+=`</nav><section class="vq-card"><div class="vq-top"><h2>Vraag ${pc}.${q}</h2>${v.soort==='creatief'?'<span class="badge joker">Creatief · jury</span>':''}<span class="badge ${st[0]}">${st[1]}</span></div>
+    <label class="fld"><span>Titel van de vraag</span><input class="inp vq-titel" id="e_${r.id}_${q}_titel" data-act="vf" data-f="titel" ${base} value="${esc(v.titel)}" placeholder="Titel van de vraag of opdracht"${d}></label>
+    <div class="vq-set"><label class="fld"><span>Nakijken</span>${sel('soort',[['antwoord','Goed / fout (antwoorden)'],['creatief','Creatief (jury)']],v.soort)}</label>
+    <label class="fld"><span>Nummering</span>${sel('nummering',[['enkel','Eén antwoord'],['abc','A  B  C'],['123','1  2  3']],v.nummering)}</label>
+    <label class="fld"><span>Punten vraag</span><input class="inp num" id="e_${r.id}_${q}_punten" data-act="vf" data-f="punten" ${base} inputmode="numeric" value="${v.punten||''}" placeholder="0"${d}></label></div>
+    <div class="vq-ans"><div class="vq-ah"><span></span><span>${v.soort==='creatief'?'Wat wordt beoordeeld':'Juiste antwoord'}</span><span>Punten</span><span></span></div>`;
+  v.regels.forEach((g,k)=>{const ck='dr_'+r.id+'_'+q+'_'+g.id;const on=S.confirm===ck;
+    h+=`<div class="vq-row"><span class="vq-l">${lab(v,k)||'•'}</span>
+      <input class="inp" id="e_${r.id}_${q}_${g.id}_t" data-act="rf" data-f="tekst" data-k="${k}" ${base} value="${esc(g.tekst)}" placeholder="${v.soort==='creatief'?'Bijv. filmpje, tekening, creativiteit':'Het juiste antwoord'}" aria-label="Antwoord ${lab(v,k)}"${d}>
+      <input class="inp num" id="e_${r.id}_${q}_${g.id}_p" data-act="rf" data-f="punten" data-k="${k}" ${base} inputmode="numeric" value="${g.punten||''}" placeholder="0" aria-label="Punten ${lab(v,k)}"${d}>
+      <button class="ibtn${on?' danger':''}" data-act="del-regel" data-k="${k}" data-ck="${ck}" ${base} aria-label="Regel verwijderen"${d||(v.regels.length<2?' disabled':'')}>${on?'Zeker?':'✕'}</button></div>`});
+  h+=`</div><div class="vq-foot"><button class="btn" data-act="add-regel" ${base}${d}>+ Antwoordregel</button><button class="btn" data-act="verdeel" ${base}${d}>Verdeel ${v.punten||0} punten gelijk</button></div>
+    <div class="vq-steps"><button class="btn" data-act="vq" data-q="${q-1}"${q<=1?' disabled':''}>← Vorige vraag</button><button class="btn primary" data-act="vq" data-q="${q+1}"${q>=V.length?' disabled':''}>Volgende vraag →</button></div></section></div>`;
   return h}
 
 /* ---------- Overzicht & uitslag ---------- */
@@ -530,7 +539,7 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
   if(a==='toegang'){const list=[...new Set(v.split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@')))];saveToegang(list);toast(list.length+' adressen hebben toegang.');return}
   if(a==='namen'){const list=[...new Set(v.split('\n').map(x=>x.trim()).filter(Boolean))];saveNamen(list);toast(list.length+(list.length===1?' naam staat':' namen staan')+' op het inlogscherm.');return}
   if(a==='ln-naam'){S.naam=v;return}
-  if(a==='rub'){S.rid=v;store('gg_rid',v);render();return}
+  if(a==='rub'){S.rid=v;S.vq=1;store('gg_rid',v);render();return}
   if(a==='teamsel'){S.team=+v;store('gg_team',v);schedule();return}
   if(a==='vf'){const q=+el.dataset.q,rid=el.dataset.rid;const o=curVraag(rid,q);const f=el.dataset.f;
     if(f==='punten')o.punten=num(v);else o[f]=v;saveVraag(rid,q,o);return}
@@ -557,6 +566,7 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
         :c==='auth/weak-password'?'Dit wachtwoord is te zwak. Kies een langer wachtwoord.':'Instellen lukte niet: '+((e&&(e.message||c))||'onbekende fout'),true)});return}
   if(a==='tab'){S.tab=el.dataset.tab;try{history.replaceState(null,'','#'+S.tab)}catch(x){}render();window.scrollTo(0,0);return}
   if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
+  if(a==='vq'){S.vq=+el.dataset.q;render();window.scrollTo(0,0);return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
   if(a==='winnaar'){toonWinnaar();return}
   if(a==='nk-aan'){const c=clone(cfg());c.nakijken=el.dataset.v==='aan';saveConfig(c);toast(c.nakijken?'Nakijken staat aan: het bestuur ziet nu het tabblad Nakijken.':'Nakijken staat uit: het bestuur ziet alleen Vragen & antwoorden.');return}
