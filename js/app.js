@@ -473,9 +473,10 @@ function vTeams(){const T=teams();
 function vJokers(){const T=teams();const N=rubs().filter(r=>r.soort==='normaal');const n=T.filter(t=>jokerOf(t.nr)).length;
   let h=`<div class="rhead"><div><h2>Jokers</h2><p class="mut">Elk team zet vóór de kwis één joker in. De score van die rubriek telt dubbel. Niet mogelijk op de sponsorrubriek, de geheime opdracht en Overige.</p></div><span class="badge ${n===T.length&&T.length?'ok':'warn'}">${n} van ${T.length} teams hebben een joker</span></div>`;
   if(!T.length)return h+empty('Nog geen teams','Maak eerst de teams aan onder Teams.');
-  h+=`<div class="panel"><div class="lrow jk lhead"><span style="text-align:center">Nr</span><span>Team</span><span>Joker op rubriek</span></div>`;
+  // elke rubriek een even grote pil achter de teamnaam; klik = joker zetten, nog eens klikken = joker weg
+  h+=`<div class="panel" style="--nj:${N.length}"><div class="lrow jk lhead"><span style="text-align:center">Nr</span><span>Team</span><span>Joker op rubriek · klik nog eens om de joker weg te halen</span></div>`;
   T.forEach(t=>{const cur=jokerOf(t.nr)||'';
-    h+=`<div class="lrow jk"><span class="ln">${t.nr}</span><span class="qa">${t.naam?esc(t.naam):'<i>Geen naam</i>'}</span><select class="inp" id="jk_${t.nr}" data-act="joker" data-nr="${t.nr}" aria-label="Joker team ${t.nr}"><option value="">Geen joker</option>${N.map(r=>`<option value="${r.id}"${r.id===cur?' selected':''}>${code(r)} · ${esc(r.naam)}</option>`).join('')}</select></div>`});
+    h+=`<div class="lrow jk"><span class="ln">${t.nr}</span><span class="qa" title="${esc(t.naam)}">${t.naam?esc(t.naam):'<i>Geen naam</i>'}</span><div class="jpills" role="group" aria-label="Joker team ${t.nr}">${N.map(r=>`<button class="jpill" data-act="jk" data-nr="${t.nr}" data-r="${r.id}" aria-pressed="${r.id===cur}" title="${code(r)} · ${esc(r.naam)}"><b>${code(r)}</b><span>${esc(r.naam)}</span></button>`).join('')}</div></div>`});
   return h+'</div>'}
 function vInst(){const c=cfg();const R=rubs();
   const nk=nakijkenAan();
@@ -561,7 +562,6 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
   if(a==='rbj-add'){if(!v)return;const c=clone(cfg());const r=c.rubrieken[+el.dataset.i];if(!r)return;const N=rubJury(r);
     if(!N.includes(v))r.juryleden=[...N,v];saveConfig(c);return}
   if(a==='team-naam'){const t=clone(S.teams);t[el.dataset.nr]=v.trim();saveTeams(t);return}
-  if(a==='joker'){const j=clone(S.jokers);if(v)j[el.dataset.nr]=v;else delete j[el.dataset.nr];saveJokers(j);return}
   if(a==='cfg'){const c=clone(cfg());c[el.dataset.f]=el.dataset.f==='jury'?+v:v;saveConfig(c);return}
   if(a==='rb'){const c=clone(cfg());const r=c.rubrieken[+el.dataset.i];if(!r)return;const f=el.dataset.f;
     if(f==='naam')r.naam=v.trim()||r.naam;else if(f==='vragen')r.vragen=Math.max(1,Math.min(20,num(v)||1));else r.max=Math.max(1,num(v)||1000);saveConfig(c);return}
@@ -570,6 +570,7 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='login'){const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});firebase.auth().signInWithPopup(p).catch(e=>{if(e&&e.code!=='auth/popup-closed-by-user')toast('Inloggen lukte niet: '+(e.message||e.code),true)});return}
   if(a==='logout'){firebase.auth().signOut().then(()=>location.reload());return}
   if(a==='login-bestuur'){loginBestuur();return}
+  if(a==='jk'){const j=clone(S.jokers);const nr=el.dataset.nr;if(j[nr]===el.dataset.r)delete j[nr];else j[nr]=el.dataset.r;saveJokers(j);return}
   // direct in de pagina wisselen (niet opnieuw opbouwen), zodat wat al getypt is blijft staan
   if(a==='toon-ww'){const id=el.dataset.for;const inp=document.getElementById(id);if(!inp)return;const t=toonWw[id]=!toonWw[id];
     inp.type=t?'text':'password';el.textContent=t?'Verbergen':'Tonen';el.setAttribute('aria-pressed',t);inp.focus();return}
