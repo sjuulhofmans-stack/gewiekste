@@ -7,6 +7,7 @@ body{margin:0}
 /* Layout: nachtblauwe kopband met tabbladen, daaronder één werkvlak; alle invulregels vaste hoogte */
 :root{
   --bg:#F1F4F8; --surface:#FFFFFF; --surface-2:#E7ECF3; --line:#D2DAE5; --line-strong:#9AA9BE;
+  --field:#EEF4FF; --field-hover:#E3ECFC; /* invulvakken bij vragen & antwoorden: duidelijk anders dan de kaart */
   --ink:#16202F; --ink-2:#4B586B;
   --night:#1C2943; --night-ink:#EEF2F8;
   --accent:#C47F17; --accent-ink:#FFFFFF; --accent-soft:#F7E8CC;
@@ -25,12 +26,14 @@ body{margin:0}
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F141D; --surface:#1D2738; --surface-2:#2A3650; --line:#435572; --line-strong:#6B80A3;
+  --field:#3A4A6B; --field-hover:#43557A;
   --ink:#E8EDF4; --ink-2:#A3AFC1; --night:#0A0E15; --night-ink:#E8EDF4;
   --accent:#E3A23F; --accent-ink:#1A1206; --accent-soft:#3A2B12;
   --good:#63C28E; --good-soft:#163024; --bad:#E57373; --bad-soft:#3B1D1F; --warn:#E8B64C; --warn-soft:#33290F;
   --joker:#B898F2; --joker-soft:#2A2141; --sb-thumb:#263044; --sb-track:#0F141D; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0F141D; --surface:#1D2738; --surface-2:#2A3650; --line:#435572; --line-strong:#6B80A3;
+  --field:#3A4A6B; --field-hover:#43557A;
   --ink:#E8EDF4; --ink-2:#A3AFC1; --night:#0A0E15; --night-ink:#E8EDF4;
   --accent:#E3A23F; --accent-ink:#1A1206; --accent-soft:#3A2B12;
   --good:#63C28E; --good-soft:#163024; --bad:#E57373; --bad-soft:#3B1D1F; --warn:#E8B64C; --warn-soft:#33290F;
@@ -179,7 +182,8 @@ col.wsp{width:28px}
 .dot{width:14px;height:14px;border-radius:50%;background:var(--line-strong)}
 .dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
 .vq-card{background:var(--surface);border:1.5px solid var(--line-strong);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
-.vq-card .inp{border-color:var(--line-strong)}
+.vq-card .inp{border-color:var(--line-strong);background:var(--field)}
+.vq-card .inp:hover:not(:disabled){background:var(--field-hover)}
 .vq-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 .vq-top h2{font-size:1.8rem;font-weight:800;margin-right:auto}
 .vq-titel{font-weight:700;font-size:1.1rem!important}
