@@ -223,6 +223,15 @@ col.wsp{width:28px}
 .lrow{display:grid;grid-template-columns:64px minmax(0,1fr) 76px;gap:10px;align-items:center;height:var(--rowT);padding-right:12px;border-top:1px solid var(--line)}
 .lrow.jk{grid-template-columns:64px minmax(0,1fr) 260px}
 .lrow.rb{grid-template-columns:64px minmax(0,1fr) 150px 96px 110px 76px}
+/* verantwoordelijken / jury: gekozen namen als kaartjes met kruisje, ernaast het uitklapmenu */
+.lrow.rj{grid-template-columns:64px minmax(0,220px) minmax(0,1fr) 240px}
+.chips{display:flex;gap:6px;align-items:center;overflow-x:auto;white-space:nowrap;min-width:0}
+.chip{display:inline-flex;align-items:center;gap:2px;flex:none;height:34px;padding:0 3px 0 12px;border-radius:999px;background:var(--accent-soft);border:1.5px solid var(--accent);font-weight:700;color:var(--ink);text-transform:none;letter-spacing:0;font-size:.95rem}
+.chips .mut{text-transform:none;letter-spacing:0;font-weight:400;font-size:1rem}
+.chip-x{width:28px;height:28px;border:0;border-radius:50%;background:transparent;color:var(--ink-2);cursor:pointer;font-size:.85rem}
+.chip-x:hover{background:var(--bad-soft);color:var(--bad)}
+.chip-x:disabled{cursor:default;opacity:.5}
+.jrow{display:grid;grid-template-columns:minmax(0,1fr) 240px;gap:10px;align-items:center;height:var(--rowT)}
 .lhead{height:34px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--ink-2)}
 .ln{text-align:center;font-family:var(--font-display);font-weight:800;font-size:1.1rem}
 .cols2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:18px;align-items:start}
@@ -330,6 +339,9 @@ body.show-open{overflow:hidden}
   .lrow.jk{grid-template-columns:44px minmax(0,1fr) 150px}
   .lrow.rb{grid-template-columns:36px minmax(0,1fr) 64px 76px 64px;font-size:.92rem}
   .lrow.rb .soort{display:none}
+  .lrow.rj{grid-template-columns:36px minmax(0,1fr) 150px}
+  .lrow.rj .qa{display:none}
+  .jrow{grid-template-columns:minmax(0,1fr) 150px}
   .cols2,.formgrid{grid-template-columns:1fr}
   col.wu{width:200px}
   .sel-team{min-width:0;flex:1 1 100%;order:-1}

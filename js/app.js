@@ -13,14 +13,16 @@
 
   Gegevens in de database:
   beheer/config   naam, editie, jury (aantal), rubrieken[]      (alleen beheerder)
+                  rubriek: {id, naam, soort, vragen, max, juryleden[]}  juryleden = verantwoordelijken (namen)
   beheer/teams    teams: { "1": "Teamnaam", ... }               (alleen beheerder)
   beheer/jokers   j: { "1": "r6", ... }  teamnummer -> rubriek  (alleen beheerder)
   beheer/toegang  emails: [ ... ]  extra Google-adressen         (alleen beheerder)
   beheer/bestuur  uid, ww  het gezamenlijke bestuursaccount     (alleen beheerder)
   publiek/bestuur namen: [ ... ]  namenlijst op het inlogscherm (iedereen leest)
   aanmeldingen/<id> naam, tijd  wie heeft ingelogd              (alleen beheerder leest)
-  vragen/<rubriek> v: { v1: {titel, punten, soort, nummering, regels[]}, ... }
-  scores/<rubriek> s: { t1: { <regelId>: punten | {j1,j2,j3} }, ... }
+  vragen/<rubriek> v: { v1: {titel, punten, soort, nummering, regels[], juryleden[]|null}, ... }
+                   juryleden bij de vraag = eigen jury; null = die van de rubriek
+  scores/<rubriek> s: { t1: { <regelId>: punten | {n_Naam,...} of {j1,j2,j3} }, ... }
 */
 (function(){
 "use strict";
@@ -69,20 +71,28 @@ function teams(){return Object.entries(S.teams||{}).map(([nr,naam])=>({nr:+nr,na
 function teamLabel(t){return 'Team '+t.nr+(t.naam?' – '+t.naam:'')}
 function ensureRid(){if(!rub(S.rid))S.rid=(rubs()[0]||{}).id}
 
-function defVraag(i){return{titel:'',punten:0,soort:'antwoord',nummering:'enkel',regels:[{id:'v'+i+'r1',tekst:'',punten:0}]}}
+function defVraag(i){return{titel:'',punten:0,soort:'antwoord',nummering:'enkel',regels:[{id:'v'+i+'r1',tekst:'',punten:0}],juryleden:null}}
 function norm(v,i){if(!v||typeof v!=='object')return defVraag(i);
   return{titel:String(v.titel||''),punten:num(v.punten),soort:v.soort==='creatief'?'creatief':'antwoord',
     nummering:['enkel','abc','123'].includes(v.nummering)?v.nummering:'enkel',
+    juryleden:Array.isArray(v.juryleden)?v.juryleden.map(String):null,
     regels:Array.isArray(v.regels)?v.regels.filter(x=>x&&x.id).map(x=>({id:String(x.id),tekst:String(x.tekst||''),punten:num(x.punten)})):[]}}
 function vragen(rid){if(VC[rid])return VC[rid];const r=rub(rid);if(!r)return[];const n=Math.max(1,Math.min(20,+r.vragen||7));
   const st=(S.vragen[rid]&&S.vragen[rid].v)||{};const out=[];for(let i=1;i<=n;i++)out.push(norm(st['v'+i],i));return VC[rid]=out}
+// jury van een creatieve opdracht: eigen lijst bij de vraag, anders de verantwoordelijken van de rubriek,
+// en zonder namen de oude rijen "Jury 1..n" (aantal uit Instellingen)
+function rubJury(r){return r&&Array.isArray(r.juryleden)?r.juryleden:[]}
+function juryNamen(r,v){return Array.isArray(v.juryleden)?v.juryleden:rubJury(r)}
+function juryOf(r,v){const N=juryNamen(r,v);
+  if(N.length)return N.map((n,i)=>({k:'n_'+n,l:'Beoordeeld door '+n,kort:n,i:i+1}));
+  return Array.from({length:jury()},(_,i)=>({k:'j'+(i+1),l:'Jury '+(i+1),kort:'J'+(i+1),i:i+1}))}
 function lab(v,k){if(v.nummering==='abc')return String.fromCharCode(65+k);if(v.nummering==='123')return String(k+1);return v.regels.length>1?String.fromCharCode(65+k):''}
 
 /* ---------- scores ---------- */
 function raw(rid,nr,rg){const d=S.scores[rid];const t=d&&d.s&&d.s['t'+nr];return t?t[rg]:undefined}
-function juryVals(o){const a=[];if(o&&typeof o==='object')for(let j=1;j<=jury();j++){const x=o['j'+j];if(typeof x==='number'&&isFinite(x))a.push(x)}return a}
+function juryVals(o,J){const a=[];if(o&&typeof o==='object')for(const jl of J){const x=o[jl.k];if(typeof x==='number'&&isFinite(x))a.push(x)}return a}
 function waarde(rid,nr,v,g){const x=raw(rid,nr,g.id);
-  if(v.soort==='creatief'){if(typeof x==='number')return x;const a=juryVals(x);if(!a.length)return null;
+  if(v.soort==='creatief'){if(typeof x==='number')return x;const a=juryVals(x,juryOf(rub(rid),v));if(!a.length)return null;
     return Math.min(g.punten,Math.ceil(a.reduce((s,y)=>s+y,0)/a.length-1e-9))}
   return typeof x==='number'&&isFinite(x)?x:null}
 function vraagScore(rid,nr,v){let s=null;for(const g of v.regels){const w=waarde(rid,nr,v,g);if(w!=null)s=(s||0)+w}return s}
@@ -212,12 +222,13 @@ function vNakijken(){ensureRid();const r=rub(S.rid);const T=teams();
   if(!T.length)return h+empty('Er zijn nog geen teams','De beheerder maakt de teams aan onder Teams. Daarna verschijnen ze hier.');
   return h+(S.mode==='team'?perTeam(r,T):raster(r,T))}
 
-function scoreInput(pre,r,t,v,g,j,extra){const x=raw(r.id,t.nr,g.id);
-  let val='';if(j){if(x&&typeof x==='object'&&typeof x['j'+j]==='number')val=x['j'+j]}else if(typeof x==='number')val=x;
-  const id=`${pre}_${r.id}_${t.nr}_${g.id}${j?'_j'+j:''}`;
-  return `<input class="${extra}" id="${id}" data-act="score" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${j?` data-j="${j}"`:''} data-max="${g.punten}" inputmode="numeric" autocomplete="off" value="${val}" aria-label="Team ${t.nr}, ${esc(g.tekst||v.titel||'regel')}${j?', jury '+j:''}"${dis()}>`}
+// jl = één jurylid uit juryOf() bij creatieve opdrachten, anders 0
+function scoreInput(pre,r,t,v,g,jl,extra){const x=raw(r.id,t.nr,g.id);
+  let val='';if(jl){if(x&&typeof x==='object'&&typeof x[jl.k]==='number')val=x[jl.k]}else if(typeof x==='number')val=x;
+  const id=`${pre}_${r.id}_${t.nr}_${g.id}${jl?'_j'+jl.i:''}`;
+  return `<input class="${extra}" id="${id}" data-act="score" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${jl?` data-j="${esc(jl.k)}" placeholder="${esc(jl.kort)}" title="${esc(jl.l)}"`:''} data-max="${g.punten}" inputmode="numeric" autocomplete="off" value="${val}" aria-label="Team ${t.nr}, ${esc(g.tekst||v.titel||'regel')}${jl?', '+esc(jl.l):''}"${dis()}>`}
 
-function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='normaal';const pc=code(r);
+function raster(r,T){const V=vragen(r.id);const isN=r.soort==='normaal';const pc=code(r);
   // smalle blauwe kolom die vast blijft staan, als scheiding tussen de vragen en de teams
   const SP='<td class="stk c4 sp" aria-hidden="true"></td>';
   let h=`<div class="grid-wrap nk"><table class="grid nk" style="--nt:${T.length}"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
@@ -227,7 +238,7 @@ function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='no
     v.regels.forEach((g,k)=>{const L=lab(v,k);
       if(v.soort==='creatief'){
         h+=`<tr class="rg"><td class="stk c1">${L}</td><td class="stk c2 tl" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Beoordeling</i>'} <span class="mut">· gemiddelde</span></td><td class="stk c3">0–${g.punten}</td>${SP}${T.map(t=>{const w=waarde(r.id,t.nr,v,g);return `<td class="${cls(w,g.punten)}">${fmt(w)}</td>`}).join('')}</tr>`;
-        for(let j=1;j<=J;j++)h+=`<tr class="rj"><td class="stk c1"></td><td class="stk c2 tl">Jury ${j}</td><td class="stk c3">0–${g.punten}</td>${SP}${T.map(t=>`<td>${scoreInput('s',r,t,v,g,j,'gi')}</td>`).join('')}</tr>`;
+        for(const jl of juryOf(r,v))h+=`<tr class="rj"><td class="stk c1"></td><td class="stk c2 tl" title="${esc(jl.l)}">${esc(jl.l)}</td><td class="stk c3">0–${g.punten}</td>${SP}${T.map(t=>`<td>${scoreInput('s',r,t,v,g,jl,'gi')}</td>`).join('')}</tr>`;
       }else{
         h+=`<tr><td class="stk c1">${L}</td><td class="stk c2 tl" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Antwoord nog niet ingevuld</i>'}</td><td class="stk c3">${g.punten}</td>${SP}${T.map(t=>{const w=waarde(r.id,t.nr,v,g);return `<td class="${cls(w,g.punten)}">${scoreInput('s',r,t,v,g,0,'gi')}</td>`}).join('')}</tr>`;
       }});
@@ -238,7 +249,7 @@ function raster(r,T){const V=vragen(r.id);const J=jury();const isN=r.soort==='no
   return h+'</tfoot></table></div>'}
 
 function perTeam(r,T){if(!T.some(t=>t.nr===S.team))S.team=T[0].nr;const t=T.find(x=>x.nr===S.team);const idx=T.indexOf(t);
-  const V=vragen(r.id);const J=jury();const isJ=jokerOf(t.nr)===r.id;const[d,a]=progress(r.id,t.nr);const pc=code(r);
+  const V=vragen(r.id);const isJ=jokerOf(t.nr)===r.id;const[d,a]=progress(r.id,t.nr);const pc=code(r);
   let h=`<div class="teambar"><button class="btn" data-act="team-prev"${idx===0?' disabled':''} aria-label="Vorig team">◀ Vorige</button>
   <select id="teamsel" class="inp sel-team" data-act="teamsel" aria-label="Kies team">${T.map(x=>`<option value="${x.nr}"${x.nr===t.nr?' selected':''}>Team ${x.nr}</option>`).join('')}</select>
   <button class="btn" data-act="team-next"${idx===T.length-1?' disabled':''} aria-label="Volgend team">Volgende ▶</button>
@@ -246,7 +257,7 @@ function perTeam(r,T){if(!T.some(t=>t.nr===S.team))S.team=T[0].nr;const t=T.find
   V.forEach((v,i)=>{const vs=vraagScore(r.id,t.nr,v);
     h+=`<section class="qcard"><div class="qhead"><span class="qc">${pc}.${i+1}</span><span class="qt" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</span><span class="qs">${vs==null?'–':vs} / ${v.punten}</span></div>`;
     v.regels.forEach((g,k)=>{const L=lab(v,k)||'•';const w=waarde(r.id,t.nr,v,g);
-      if(v.soort==='creatief'){let ins='';for(let j=1;j<=J;j++)ins+=scoreInput('p',r,t,v,g,j,'inp num jy').replace('<input ',`<input placeholder="J${j}" `);
+      if(v.soort==='creatief'){let ins='';for(const jl of juryOf(r,v))ins+=scoreInput('p',r,t,v,g,jl,'inp num jy');
         h+=`<div class="qrow"><span class="ql">${L}</span><span class="qa" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Beoordeling</i>'}</span><span class="qm">0–${g.punten}</span><span class="qctl">${ins}<span class="gem" title="Gemiddelde, naar boven afgerond">= ${w==null?'–':w}</span></span></div>`;
       }else{const dd=dis();
         h+=`<div class="qrow"><span class="ql">${L}</span><span class="qa" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Antwoord nog niet ingevuld</i>'}</span><span class="qm">${g.punten} pnt</span><span class="qctl">
@@ -271,17 +282,27 @@ function vraagStatus(v){const rs=v.regels.reduce((s,g)=>s+g.punten,0);
   if(!v.titel)return['warn','Titel ontbreekt'];
   if(v.regels.some(g=>!g.tekst))return['warn','Antwoord ontbreekt'];
   return['ok','✓ Klopt']}
+// gekozen juryleden als kaartjes met een kruisje, plus een uitklapmenu met de overige bestuursleden
+function juryKies(N,act,base,d,id){const A=S.namen||[];const vrij=A.filter(n=>!N.includes(n));
+  return `<div class="chips">${N.length?N.map(n=>`<span class="chip">${esc(n)}<button class="chip-x" data-act="${act}-del" data-n="${esc(n)}" ${base} aria-label="${esc(n)} weghalen" title="Weghalen"${d}>✕</button></span>`).join(''):'<span class="mut">Nog niemand gekozen</span>'}</div>
+  <select class="inp" id="${id}" data-act="${act}-add" ${base} aria-label="Jurylid toevoegen"${d||(vrij.length?'':' disabled')}><option value="">${!A.length?'Nog geen bestuursleden':vrij.length?'+ Jurylid toevoegen…':'Iedereen is gekozen'}</option>${vrij.map(n=>`<option value="${esc(n)}">${esc(n)}</option>`).join('')}</select>`}
+function vqJury(r,v,q,base,d){const eigen=Array.isArray(v.juryleden);const N=juryNamen(r,v);
+  const uitleg=eigen?'Aangepast voor deze opdracht.':'Dit zijn de verantwoordelijken van de rubriek.';
+  return `<div class="fld"><span>Jury voor deze opdracht</span><div class="jrow">${juryKies(N,'vj',base,d,`e_${r.id}_${q}_jury`)}</div></div>
+    <div class="vq-foot"><span class="mut">${uitleg} ${N.length?'Bij Nakijken krijgt ieder jurylid een eigen rij.':`Zonder namen staan er bij Nakijken rijen Jury 1 t/m ${jury()}.`}</span>${eigen?`<button class="btn" data-act="vj-reset" ${base}${d}>Terug naar de jury van de rubriek</button>`:''}</div>`}
 // vraag voor vraag: links de lijst met vragen, rechts één vraag om in te vullen
 function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som=V.reduce((s,v)=>s+v.punten,0);const max=+r.max||1000;const pc=code(r);const d=dis();
   const q=Math.max(1,Math.min(V.length,S.vq||1));const v=V[q-1];const base=`data-rid="${r.id}" data-q="${q}"`;const st=vraagStatus(v);
   const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('')}</select>`;
-  let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}</div><div class="vq-grid"><nav class="vq-nav" aria-label="Vragen">`;
+  const RJ=rubJury(r);
+  let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}${RJ.length?`<span class="mut">Verantwoordelijk: <b>${RJ.map(esc).join(', ')}</b></span>`:''}</div><div class="vq-grid"><nav class="vq-nav" aria-label="Vragen">`;
   V.forEach((x,i)=>{h+=`<button data-act="vq" data-q="${i+1}"${i+1===q?' aria-current="true"':''}><span class="nr">${pc}.${i+1}</span><span class="t">${x.titel?esc(x.titel):'Nog leeg'}</span><span class="dot ${vraagStatus(x)[0]}" title="${vraagStatus(x)[1]}"></span></button>`});
   h+=`</nav><section class="vq-card"><div class="vq-top"><h2>Vraag ${pc}.${q}</h2>${v.soort==='creatief'?'<span class="badge joker">Creatief · jury</span>':''}<span class="badge ${st[0]}">${st[1]}</span></div>
     <label class="fld"><span>Titel van de vraag</span><input class="inp vq-titel" id="e_${r.id}_${q}_titel" data-act="vf" data-f="titel" ${base} value="${esc(v.titel)}" placeholder="Titel van de vraag of opdracht"${d}></label>
     <div class="vq-set"><label class="fld"><span>Nakijken</span>${sel('soort',[['antwoord','Goed / fout (antwoorden)'],['creatief','Creatief (jury)']],v.soort)}</label>
     <label class="fld"><span>Nummering</span>${sel('nummering',[['enkel','Eén antwoord'],['abc','A  B  C'],['123','1  2  3']],v.nummering)}</label>
     <label class="fld"><span>Punten vraag</span><input class="inp num" id="e_${r.id}_${q}_punten" data-act="vf" data-f="punten" ${base} inputmode="numeric" value="${v.punten||''}" placeholder="0"${d}></label></div>
+    ${v.soort==='creatief'?vqJury(r,v,q,base,d):''}
     <div class="vq-ans"><div class="vq-ah"><span></span><span>${v.soort==='creatief'?'Wat wordt beoordeeld':'Juiste antwoord'}</span><span>Punten</span><span></span></div>`;
   v.regels.forEach((g,k)=>{const ck='dr_'+r.id+'_'+q+'_'+g.id;const on=S.confirm===ck;
     h+=`<div class="vq-row"><span class="vq-l">${lab(v,k)||'•'}</span>
@@ -479,7 +500,7 @@ function vInst(){const c=cfg();const R=rubs();
   <div class="panel"><h3>Kwis</h3><div class="pad"><div class="formgrid">
     <label class="fld"><span>Naam</span><input class="inp" id="c_naam" data-act="cfg" data-f="naam" value="${esc(c.naam)}"></label>
     <label class="fld"><span>Editie</span><input class="inp" id="c_editie" data-act="cfg" data-f="editie" value="${esc(c.editie)}" placeholder="Bijv. Editie 6 (2026)"></label>
-    <label class="fld"><span>Aantal juryleden (creatief)</span><select class="inp" id="c_jury" data-act="cfg" data-f="jury">${[1,2,3,4,5,6].map(n=>`<option${n===jury()?' selected':''}>${n}</option>`).join('')}</select></label>
+    <label class="fld"><span>Aantal juryleden zonder namen</span><select class="inp" id="c_jury" data-act="cfg" data-f="jury">${[1,2,3,4,5,6].map(n=>`<option${n===jury()?' selected':''}>${n}</option>`).join('')}</select></label>
   </div></div></div>
   ${S.backend==='firebase'?vToegang():''}
   <div class="panel"><h3>Rubrieken</h3><div class="lrow rb lhead"><span style="text-align:center">#</span><span>Naam</span><span class="soort">Soort</span><span>Vragen</span><span>Max punten</span><span></span></div>`;
@@ -488,7 +509,11 @@ function vInst(){const c=cfg();const R=rubs();
     <input class="inp num" id="rv_${r.id}" data-act="rb" data-f="vragen" data-i="${i}" inputmode="numeric" value="${r.vragen}" aria-label="Aantal vragen"><input class="inp num" id="rm_${r.id}" data-act="rb" data-f="max" data-i="${i}" inputmode="numeric" value="${r.max}" aria-label="Maximaal aantal punten">
     ${r.soort==='normaal'?`<button class="ibtn${on?' danger':''}" data-act="rb-del" data-i="${i}" data-ck="${ck}" aria-label="Rubriek verwijderen">${on?'Zeker?':'✕'}</button>`:'<span></span>'}</div>`});
   h+=`<div class="efoot" style="padding-left:12px"><button class="btn" data-act="rb-add">+ Rubriek toevoegen</button><span class="mut">Een verwijderde rubriek verdwijnt uit de uitslag. Ingevulde punten blijven bewaard.</span></div></div>`;
-  return h}
+  // verantwoordelijken per rubriek; zij zijn ook de jury van de creatieve opdrachten in die rubriek
+  h+=`<div class="panel"><h3>Verantwoordelijken en jury per rubriek</h3><div class="pad"><p class="mut" style="margin:0">Kies per rubriek wie er verantwoordelijk is. Zij zijn ook de jury van de creatieve opdrachten in die rubriek. Bij een opdracht kun je de jury nog aanpassen.${(S.namen||[]).length?'':' Vul eerst de namen van de bestuursleden in bij Toegang bestuur.'}</p></div>
+  <div class="lrow rj lhead"><span style="text-align:center">#</span><span class="qa">Rubriek</span><span>Verantwoordelijk / jury</span><span></span></div>`;
+  R.forEach((r,i)=>{h+=`<div class="lrow rj"><span class="ln">${code(r)}</span><span class="qa" title="${esc(r.naam)}">${esc(r.naam)}</span>${juryKies(rubJury(r),'rbj',`data-i="${i}"`,'','rj_'+r.id)}</div>`});
+  return h+'</div>'}
 
 const tijdTxt=t=>new Date(t).toLocaleString('nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 function vToegang(){const B=S.bestuur||{};const A=(S.aanm||[]).slice().sort((a,b)=>b.tijd-a.tijd).slice(0,50);
@@ -509,11 +534,11 @@ function parseScore(str,max){str=String(str).trim().toLowerCase();if(str==='')re
   if(n<0)return{err:'Een score kan niet lager zijn dan 0.'};if(n>max)return{err:'Te hoog: deze regel is maximaal '+max+' punten waard.'};
   return{v:Math.round(n)}}
 function commitScore(el){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.dataset.rg,j=el.dataset.j,max=+el.dataset.max;dirty.delete(el.id);
-  const x=raw(rid,nr,rg);const cur=j?(x&&typeof x==='object'&&typeof x['j'+j]==='number'?x['j'+j]:null):(typeof x==='number'?x:null);
+  const x=raw(rid,nr,rg);const cur=j?(x&&typeof x==='object'&&typeof x[j]==='number'?x[j]:null):(typeof x==='number'?x:null);
   const p=parseScore(el.value,max);
   if(p.err){toast(p.err,true);el.value=cur==null?'':cur;return false}
   if(p.v===cur){el.value=cur==null?'':cur;return true}
-  saveScore(rid,nr,rg,j?{['j'+j]:p.v}:p.v);return true}
+  saveScore(rid,nr,rg,j?{[j]:p.v}:p.v);return true}
 function nextScoreInput(el){const all=[...$app.querySelectorAll('input[data-act="score"]')];
   const list=el.classList.contains('gi')?all.filter(x=>x.dataset.nr===el.dataset.nr&&x.classList.contains('gi')):all;
   const i=list.indexOf(el);return list[i+1]||null}
@@ -545,6 +570,10 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
     if(f==='punten')o.punten=num(v);else o[f]=v;saveVraag(rid,q,o);return}
   if(a==='rf'){const q=+el.dataset.q,rid=el.dataset.rid,k=+el.dataset.k;const o=curVraag(rid,q);if(!o.regels[k])return;
     if(el.dataset.f==='punten')o.regels[k].punten=num(v);else o.regels[k].tekst=v;saveVraag(rid,q,o);return}
+  if(a==='vj-add'){if(!v)return;const q=+el.dataset.q,rid=el.dataset.rid;const o=curVraag(rid,q);const N=juryNamen(rub(rid),o);
+    if(!N.includes(v))o.juryleden=[...N,v];saveVraag(rid,q,o);toast(v+' is toegevoegd aan de jury van deze opdracht.');return}
+  if(a==='rbj-add'){if(!v)return;const c=clone(cfg());const r=c.rubrieken[+el.dataset.i];if(!r)return;const N=rubJury(r);
+    if(!N.includes(v))r.juryleden=[...N,v];saveConfig(c);return}
   if(a==='team-naam'){const t=clone(S.teams);t[el.dataset.nr]=v.trim();saveTeams(t);return}
   if(a==='joker'){const j=clone(S.jokers);if(v)j[el.dataset.nr]=v;else delete j[el.dataset.nr];saveJokers(j);return}
   if(a==='cfg'){const c=clone(cfg());c[el.dataset.f]=el.dataset.f==='jury'?+v:v;saveConfig(c);return}
@@ -576,6 +605,9 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='add-regel'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);const id=newId();o.regels.push({id,tekst:'',punten:0});
     if(o.nummering==='enkel'&&o.regels.length>1)o.nummering='abc';S.pf=`e_${rid}_${q}_${id}_t`;saveVraag(rid,q,o);return}
   if(a==='del-regel'){if(!askConfirm(el.dataset.ck))return;const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);o.regels.splice(+el.dataset.k,1);saveVraag(rid,q,o);return}
+  if(a==='vj-del'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);o.juryleden=juryNamen(rub(rid),o).filter(n=>n!==el.dataset.n);saveVraag(rid,q,o);return}
+  if(a==='vj-reset'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);o.juryleden=null;saveVraag(rid,q,o);return}
+  if(a==='rbj-del'){const c=clone(cfg());const r=c.rubrieken[+el.dataset.i];if(!r)return;r.juryleden=rubJury(r).filter(n=>n!==el.dataset.n);saveConfig(c);return}
   if(a==='verdeel'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);const P=o.punten,n=o.regels.length;
     if(!P){toast('Vul eerst het aantal punten van deze vraag in.',true);return}if(!n)return;
     const b=Math.floor(P/n),rest=P-b*n;o.regels.forEach((g,k)=>g.punten=b+(k<rest?1:0));saveVraag(rid,q,o);toast(P+' punten verdeeld over '+n+(n===1?' regel':' regels')+'.');return}
@@ -621,6 +653,6 @@ function init(){const O=window.GGOpslag;
       S.isBestuur=S.email===String(F.bestuurAccount||'').trim().toLowerCase();
       S.dbOk=true;S.canWrite=true;subscribe();render()});
     render();return}
-  S.backend='lokaal';db=O.lokaleOpslag();S.dbOk=true;S.isOwner=true;S.canWrite=true;subscribe();render()}
+  S.backend='lokaal';db=O.lokaleOpslag();db.doc('publiek/bestuur').onSnapshot(s=>{S.namen=(s.exists&&s.data().namen)||[];schedule()});S.dbOk=true;S.isOwner=true;S.canWrite=true;subscribe();render()}
 init();
 })();
