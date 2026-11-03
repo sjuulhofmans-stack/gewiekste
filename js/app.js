@@ -167,6 +167,13 @@ function askConfirm(key){if(S.confirm===key){S.confirm=null;return true}S.confir
 function fitGrid(){const g=$app.querySelector('.grid-wrap.nk');if(!g)return;
   const top=g.getBoundingClientRect().top+window.scrollY;g.style.maxHeight=Math.max(320,window.innerHeight-top-16)+'px'}
 window.addEventListener('resize',fitGrid);
+// naamkaartje bij muis op een teamkop (data-tip); staat buiten #app zodat de tabel het niet afknipt
+const $tip=document.createElement('div');$tip.id='tip';$tip.hidden=true;document.body.appendChild($tip);
+$app.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(!el){$tip.hidden=true;return}
+  $tip.textContent=el.dataset.tip;$tip.hidden=false;const b=el.getBoundingClientRect();const w=$tip.offsetWidth;
+  $tip.style.left=Math.max(8,Math.min(innerWidth-w-8,b.left+b.width/2-w/2))+'px';$tip.style.top=(b.bottom+6)+'px'});
+$app.addEventListener('mouseleave',()=>{$tip.hidden=true});
+document.addEventListener('scroll',()=>{$tip.hidden=true},true);
 let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0;render()})}
 function render(){VC={};
   const a=document.activeElement;let f=null;
@@ -233,7 +240,7 @@ function raster(r,T){const V=vragen(r.id);const isN=r.soort==='normaal';const pc
   // smalle blauwe kolom die vast blijft staan, als scheiding tussen de vragen en de teams
   const SP='<td class="stk c4 sp" aria-hidden="true"></td>';
   let h=`<div class="grid-wrap nk"><table class="grid nk" style="--nt:${T.length}"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
-  <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th><th class="stk c4 sp" aria-hidden="true"></th>${T.map(t=>`<th class="ct" title="Team ${t.nr}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
+  <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th><th class="stk c4 sp" aria-hidden="true"></th>${T.map(t=>`<th class="ct" data-tip="Team ${t.nr} · ${t.naam?esc(t.naam):'nog geen naam'}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
   V.forEach((v,i)=>{
     h+=`<tr class="rq"><td class="stk c1">${pc}.${i+1}</td><td class="stk c2 tl" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</td><td class="stk c3">${v.punten}</td>${SP}${T.map(t=>`<td>${fmt(vraagScore(r.id,t.nr,v))}</td>`).join('')}</tr>`;
     v.regels.forEach((g,k)=>{const L=lab(v,k);
