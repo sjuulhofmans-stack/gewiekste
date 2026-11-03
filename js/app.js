@@ -139,7 +139,13 @@ function saveJokers(j){S.jokers=j;schedule();saveDoc('beheer/jokers',{j:j})}
 function saveConfig(c){S.config=c;VC={};schedule();saveDoc('beheer/config',c)}
 
 /* ---------- toast & bevestigen ---------- */
-let tt=0;function toast(msg,bad){const el=document.getElementById('toast');el.textContent=msg;el.className='show'+(bad?' bad':'');clearTimeout(tt);tt=setTimeout(()=>{el.className=''},bad?5200:2600)}
+/* meldingen: kaartjes rechtsonder met een kruisje. Korte berichten (toast) verdwijnen vanzelf;
+   vaste meldingen (notices) blijven tot je ze wegklikt. */
+const WEG=new Set();
+function kaart(k,soort,html){return `<div class="mld ${soort}" data-k="${k}" role="${soort==='bad'?'alert':'status'}"><span class="mld-i" aria-hidden="true">${soort==='bad'?'!':soort==='ok'?'✓':'i'}</span><div class="mld-t">${html}</div><button class="mld-x" data-weg="${k}" aria-label="Melding sluiten" title="Sluiten">✕</button></div>`}
+let tt=0;function toast(msg,bad){const el=document.getElementById('mld-kort');el.innerHTML=kaart('kort',bad?'bad':'ok',esc(msg));clearTimeout(tt);tt=setTimeout(()=>{el.innerHTML=''},bad?8000:4000)}
+document.getElementById('meldingen').addEventListener('click',e=>{const b=e.target.closest('[data-weg]');if(!b)return;const k=b.dataset.weg;
+  if(k==='kort'){clearTimeout(tt);document.getElementById('mld-kort').innerHTML=''}else{WEG.add(k);b.closest('.mld').remove();mldNu=document.getElementById('mld-vast').innerHTML}});
 function askConfirm(key){if(S.confirm===key){S.confirm=null;return true}S.confirm=key;schedule();setTimeout(()=>{if(S.confirm===key){S.confirm=null;schedule()}},4000);return false}
 
 /* ---------- render ---------- */
@@ -160,19 +166,23 @@ function render(){VC={};
     if(dirty.has(f.id)&&el.value!==f.val)el.value=f.val;
     el.focus({preventScroll:true});if(f.s!=null){try{el.setSelectionRange(f.s,f.e)}catch(e){}}}}}
 
-function html(){return header()+'<main class="wrap main">'+notices()+view()+'</main>'}
+let mldNu='';
+function html(){const m=notices().filter(([k])=>!WEG.has(k)).map(n=>kaart(...n)).join('');
+  if(m!==mldNu){mldNu=m;document.getElementById('mld-vast').innerHTML=m}
+  return header()+'<main class="wrap main">'+view()+'</main>'}
 function header(){const c=cfg();
   const role=S.backend==='lokaal'?'Lokaal testen':S.isOwner?'Beheerder':(S.dbOk&&S.canWrite?'Bestuurslid':'Alleen lezen');
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
   <div class="head-r"><div class="top-right"><span class="role">${role}</span><span id="status" class="status" aria-live="polite">${statusTxt()}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
   ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':TABS.map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
-function notices(){let h='';
-  if(S.backend==='lokaal')h+='<div class="notice"><b>Lokaal testen.</b> Firebase is nog niet ingesteld (js/firebase-config.js). Alles wordt alleen in deze browser bewaard.</div>';
-  if(S.noAccess)h+=S.isBestuur?'<div class="notice bad"><b>Nog geen toegang.</b> Het bestuursaccount is nog niet goedgekeurd. Vraag de beheerder om bij Instellingen het wachtwoord opnieuw in te stellen. Daarna herlaad je de pagina.</div>'
-    :`<div class="notice bad"><b>Nog geen toegang.</b> Je bent ingelogd als ${esc(S.email)}, maar dit adres staat nog niet op de lijst. Vraag de beheerder om je e-mailadres toe te voegen. Daarna herlaad je de pagina.</div>`;
-  else if(S.loadSlow&&!S.fresh)h+='<div class="notice">De gegevens zijn nog niet bereikbaar. Controleer je internetverbinding. De pagina probeert het zelf opnieuw.</div>';
-  else if(S.dbOk&&!S.canWrite)h+='<div class="notice">Je kunt meekijken, maar niets wijzigen.</div>';
+// vaste meldingen als [sleutel, soort, tekst]; getoond als kaartje rechtsonder
+function notices(){const h=[];
+  if(S.backend==='lokaal')h.push(['lokaal','info','<b>Lokaal testen.</b> Firebase is nog niet ingesteld (js/firebase-config.js). Alles wordt alleen in deze browser bewaard.']);
+  if(S.noAccess)h.push(['toegang','bad',S.isBestuur?'<b>Nog geen toegang.</b> Het bestuursaccount is nog niet goedgekeurd. Vraag de beheerder om bij Instellingen het wachtwoord opnieuw in te stellen. Daarna herlaad je de pagina.'
+    :`<b>Nog geen toegang.</b> Je bent ingelogd als ${esc(S.email)}, maar dit adres staat nog niet op de lijst. Vraag de beheerder om je e-mailadres toe te voegen. Daarna herlaad je de pagina.`]);
+  else if(S.loadSlow&&!S.fresh)h.push(['traag','info','<b>Even geduld.</b> De gegevens zijn nog niet bereikbaar. Controleer je internetverbinding. De pagina probeert het zelf opnieuw.']);
+  else if(S.dbOk&&!S.canWrite)h.push(['lezen','info','Je kunt meekijken, maar niets wijzigen.']);
   return h}
 function vLogin(){const N=S.namen||[];
   const kies=N.length?`<p class="mut">Kies je naam en vul het wachtwoord van het bestuur in. Alles wordt direct opgeslagen.</p>

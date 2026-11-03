@@ -283,9 +283,19 @@ body.show-open{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.show *,.btn.huge{animation-duration:.01ms!important;animation-iteration-count:1!important}}
 .legend{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:.95rem;color:var(--ink-2)}
 
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);max-width:min(560px,calc(100vw - 32px));background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:10px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:50;opacity:0;pointer-events:none;transition:opacity .2s}
-#toast.show{opacity:1}
-#toast.bad{background:var(--bad);color:#fff}
+/* meldingen: kleine kaartjes rechtsonder, altijd weg te klikken */
+#meldingen{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:50;display:flex;flex-direction:column;gap:10px;width:min(380px,calc(100vw - 32px));pointer-events:none}
+#meldingen>div{display:contents}
+.mld{pointer-events:auto;display:grid;grid-template-columns:30px minmax(0,1fr) 36px;gap:10px;align-items:start;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-left:5px solid var(--warn);border-radius:12px;padding:12px 8px 12px 12px;box-shadow:0 10px 30px rgba(0,0,0,.28);font-size:.95rem;line-height:1.4;animation:mld-in .2s ease-out}
+.mld.bad{border-left-color:var(--bad)}
+.mld.ok{border-left-color:var(--good)}
+.mld-i{display:grid;place-items:center;width:30px;height:30px;border-radius:999px;background:var(--warn-soft);color:var(--warn);font-weight:800}
+.mld.bad .mld-i{background:var(--bad-soft);color:var(--bad)}
+.mld.ok .mld-i{background:var(--good-soft);color:var(--good)}
+.mld-t{padding-top:4px;overflow-wrap:anywhere}
+.mld-x{width:36px;height:36px;border:0;border-radius:8px;background:transparent;color:var(--ink-2);font-size:1rem;cursor:pointer}
+.mld-x:hover{background:var(--surface-2);color:var(--ink)}
+@keyframes mld-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 @media (max-width:760px){
   .qrow{grid-template-columns:44px minmax(0,1fr) 70px;grid-template-rows:44px 52px;height:96px;padding-right:10px}
@@ -307,7 +317,7 @@ body.show-open{overflow:hidden}
   .rubsel{flex:1 1 100%}.sel-rub{min-width:0;flex:1}
   .teambar .btn{flex:1}
 }
-@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+@media (prefers-reduced-motion:reduce){.mld{animation:none}}
 
 /* inloggen */
 .who{font-size:.9rem;opacity:.85;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
