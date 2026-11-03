@@ -108,7 +108,9 @@ function ranking(zonderJ){const L=teams().map(t=>({...t,tot:teamTot(t.nr,zonderJ
 
 /* ---------- opslaan ---------- */
 function setStatus(){const el=document.getElementById('status');if(el)el.textContent=statusTxt()}
-function statusTxt(){if(S.needLogin)return'Niet ingelogd';if(S.noAccess)return'Geen toegang';if(S.saving>0)return'Opslaan…';if(S.backend==='lokaal')return'Opgeslagen op deze computer ✓';if(S.saving>0)return'Opslaan…';return S.fresh?'':'Laden…'}
+function statusTxt(){if(S.needLogin)return'Niet ingelogd';if(S.noAccess)return'Geen toegang';if(S.saving>0)return'Opslaan…';if(S.backend==='lokaal')return'Opgeslagen ✓';return S.fresh?'':'Laden…'}
+// naar een vakje springen zonder dat de pagina verschuift: alleen scrollen als het vakje buiten beeld staat
+function focusSel(el){el.focus({preventScroll:true});el.scrollIntoView({block:'nearest',inline:'nearest'});if(el.select)el.select()}
 function enqueue(path,fn){if(!db)return;S.saving++;setStatus();
   Q[path]=(Q[path]||Promise.resolve()).then(fn).catch(onErr).finally(()=>{S.saving--;setStatus()})}
 function onErr(e){const c=e&&e.code;
@@ -174,7 +176,7 @@ function render(){VC={};
   const gw=$app.querySelector('.grid-wrap');const sc=gw?{l:gw.scrollLeft,t:gw.scrollTop}:null;
   $app.innerHTML=html();fitGrid();
   const gw2=$app.querySelector('.grid-wrap');if(gw2&&sc){gw2.scrollLeft=sc.l;gw2.scrollTop=sc.t}
-  if(S.pf){const el=document.getElementById(S.pf);S.pf=null;if(el){el.focus({preventScroll:false});if(el.select)el.select()}return}
+  if(S.pf){const el=document.getElementById(S.pf);S.pf=null;if(el)focusSel(el);return}
   if(f){const el=document.getElementById(f.id);if(el){
     if(dirty.has(f.id)&&el.value!==f.val)el.value=f.val;
     el.focus({preventScroll:true});if(f.s!=null){try{el.setSelectionRange(f.s,f.e)}catch(e){}}}}}
@@ -553,10 +555,10 @@ $app.addEventListener('input',e=>{const el=e.target;if(el.id)dirty.add(el.id)});
 $app.addEventListener('keydown',e=>{const el=e.target;
   if(el.dataset.act==='score'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)&&!e.shiftKey&&!e.ctrlKey&&!e.altKey){
     e.preventDefault();const nx=arrowScoreInput(el,e.key);if(!nx)return;const ok=commitScore(el);
-    if(ok){S.pf=nx.id;if(!raf){nx.focus();nx.select()}}return}
+    if(ok){S.pf=nx.id;if(!raf)focusSel(nx)}return}
   if(e.key!=='Enter'||el.tagName==='TEXTAREA')return;
   if(el.dataset.act==='score'){e.preventDefault();const nx=nextScoreInput(el);const ok=commitScore(el);
-    if(ok&&nx){S.pf=nx.id;if(!raf){nx.focus();nx.select()}}return}
+    if(ok&&nx){S.pf=nx.id;if(!raf)focusSel(nx)}return}
   if(el.id==='ln_ww'){e.preventDefault();loginBestuur();return}
   if(el.tagName==='INPUT'){e.preventDefault();el.blur()}});
 $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!a)return;dirty.delete(el.id);const v=el.value;
