@@ -190,7 +190,7 @@ function vLogin(){const N=S.namen||[];
     <div class="fld"><label for="ln_ww">Wachtwoord</label>${wwVeld('ln_ww','','autocomplete="current-password"')}</div>
     <button class="btn primary big" data-act="login-bestuur">Inloggen</button>`
     :'<p class="mut">De beheerder heeft nog geen bestuursleden ingesteld.</p>';
-  return `<div class="login">${OWL}<h2>Welkom bij de uitslagen</h2>${kies}<div class="login-beh"><p class="mut">Ben je de beheerder?</p><button class="btn" data-act="login">Inloggen met Google</button></div></div>`}
+  return `<div class="login">${OWL}<h2>Welkom bij het nakijken en de uitslagen</h2>${kies}<div class="login-beh"><p class="mut">Ben je de beheerder?</p><button class="btn" data-act="login">Inloggen met Google</button></div></div>`}
 function view(){if(S.needLogin)return vLogin();if(S.noAccess)return '';let t=S.tab;if(BTABS.some(x=>x[0]===t)&&!S.isOwner)t='nakijken';
   return({nakijken:vNakijken,vragen:vVragen,overzicht:vOverzicht,uitslag:vUitslag,stats:vStats,teams:vTeams,jokers:vJokers,instellingen:vInst}[t]||vNakijken)()}
 function empty(t,p){return `<div class="empty"><h3>${t}</h3><p>${p}</p></div>`}
