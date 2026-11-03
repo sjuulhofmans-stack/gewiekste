@@ -21,5 +21,9 @@ window.GG_FIREBASE = {
 
   // Het Google-account van de beheerder (alleen dit account mag teams,
   // jokers en instellingen wijzigen). Moet hetzelfde zijn als in firestore.rules.
-  beheerder: "sjuulhofmans@gmail.com"
+  beheerder: "sjuulhofmans@gmail.com",
+
+  // Het gezamenlijke account waarmee bestuursleden inloggen (naam kiezen +
+  // algemeen wachtwoord). Het wachtwoord stel je in bij Instellingen.
+  bestuurAccount: "bestuur@gewiekste-uitslagen.firebaseapp.com"
 };

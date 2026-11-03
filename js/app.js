@@ -15,7 +15,10 @@
   beheer/config   naam, editie, jury (aantal), rubrieken[]      (alleen beheerder)
   beheer/teams    teams: { "1": "Teamnaam", ... }               (alleen beheerder)
   beheer/jokers   j: { "1": "r6", ... }  teamnummer -> rubriek  (alleen beheerder)
-  beheer/toegang  emails: [ ... ]  wie mag invullen             (alleen beheerder)
+  beheer/toegang  emails: [ ... ]  extra Google-adressen         (alleen beheerder)
+  beheer/bestuur  uid, ww  het gezamenlijke bestuursaccount     (alleen beheerder)
+  publiek/bestuur namen: [ ... ]  namenlijst op het inlogscherm (iedereen leest)
+  aanmeldingen/<id> naam, tijd  wie heeft ingelogd              (alleen beheerder leest)
   vragen/<rubriek> v: { v1: {titel, punten, soort, nummering, regels[]}, ... }
   scores/<rubriek> s: { t1: { <regelId>: punten | {j1,j2,j3} }, ... }
 */
@@ -36,12 +39,12 @@ const TABS=[['vragen','Vragen & antwoorden'],['nakijken','Nakijken'],['overzicht
 const BTABS=[['teams','Teams'],['jokers','Jokers'],['instellingen','Instellingen']];
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
-  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],dbOk:null,loadSlow:false,saving:0,
+  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],dbOk:null,loadSlow:false,saving:0,
   tab:'nakijken',rid:null,mode:'raster',team:null,confirm:null,pf:null};
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
 
-try{S.rid=localStorage.getItem('gg_rid');S.mode=localStorage.getItem('gg_mode')||'raster';S.uj=localStorage.getItem('gg_uj')||'met';const t=+localStorage.getItem('gg_team');if(t)S.team=t;}catch(e){}
+try{S.naam=localStorage.getItem('gg_naam')||'';S.rid=localStorage.getItem('gg_rid');S.mode=localStorage.getItem('gg_mode')||'raster';S.uj=localStorage.getItem('gg_uj')||'met';const t=+localStorage.getItem('gg_team');if(t)S.team=t;}catch(e){}
 const h0=location.hash.slice(1); if([...TABS,...BTABS].some(t=>t[0]===h0))S.tab=h0;
 
 /* ---------- helpers ---------- */
@@ -96,7 +99,7 @@ function statusTxt(){if(S.needLogin)return'Niet ingelogd';if(S.noAccess)return'G
 function enqueue(path,fn){if(!db)return;S.saving++;setStatus();
   Q[path]=(Q[path]||Promise.resolve()).then(fn).catch(onErr).finally(()=>{S.saving--;setStatus()})}
 function onErr(e){const c=e&&e.code;
-  if(c==='permission-denied'||c==='invalid_argument'){S.canWrite=false;toast('Opslaan lukte niet: je hebt geen rechten om dit te wijzigen. Vraag de beheerder om je e-mailadres toe te voegen.',true);schedule()}
+  if(c==='permission-denied'||c==='invalid_argument'){S.canWrite=false;toast('Opslaan lukte niet: je hebt geen rechten om dit te wijzigen. Vraag de beheerder om toegang.',true);schedule()}
   else if(c==='resource-exhausted'||c==='quota_exceeded')toast('De opslag zit (tijdelijk) aan zijn limiet. Probeer het later opnieuw.',true);
   else if(c==='unauthenticated'){S.needLogin=true;schedule()}
   else toast('Opslaan lukte niet door een verbindingsprobleem. Vul de laatste waarde opnieuw in.',true)}
@@ -107,6 +110,29 @@ function saveScore(rid,nr,rg,val){applyScore(rid,nr,rg,val);schedule();const p='
 function saveVraag(rid,i,v){const d=clone(S.vragen[rid]||{v:{}});d.v=d.v||{};d.v['v'+i]=v;S.vragen[rid]=d;VC={};schedule();
   const p='vragen/'+rid;enqueue(p,()=>db.doc(p).update({v:{['v'+i]:v}}))}
 function saveToegang(list){S.toegang=list;schedule();saveDoc('beheer/toegang',{emails:list})}
+function saveNamen(list){S.namen=list;schedule();saveDoc('publiek/bestuur',{namen:list})}
+// algemeen wachtwoord: het bestuursaccount aanmaken of het wachtwoord wijzigen,
+// via een tweede Firebase-app zodat de beheerder zelf ingelogd blijft
+async function zetBestuurWw(ww){const F=window.GG_FIREBASE;
+  const app2=firebase.apps.find(a=>a.name==='bestuur')||firebase.initializeApp(F.config,'bestuur');
+  const a2=app2.auth();await a2.setPersistence(firebase.auth.Auth.Persistence.NONE);
+  const oud=S.bestuur&&S.bestuur.ww;let cred;
+  try{cred=await a2.createUserWithEmailAndPassword(F.bestuurAccount,ww)}
+  catch(e){if(!e||e.code!=='auth/email-already-in-use')throw e;if(!oud)throw{code:'geen-oud'};
+    cred=await a2.signInWithEmailAndPassword(F.bestuurAccount,oud);if(oud!==ww)await cred.user.updatePassword(ww)}
+  const uid=cred.user.uid;await a2.signOut();
+  await db.doc('beheer/bestuur').set({uid,ww})}
+function loginFout(e){const c=e&&e.code;
+  if(['auth/wrong-password','auth/invalid-credential','auth/invalid-login-credentials','auth/user-not-found'].includes(c))return'Dat wachtwoord klopt niet. Probeer het nog eens.';
+  if(c==='auth/too-many-requests')return'Te vaak geprobeerd. Wacht een paar minuten en probeer het opnieuw.';
+  if(c==='auth/network-request-failed')return'Geen internetverbinding. Controleer je verbinding.';
+  return'Inloggen lukte niet: '+((e&&(e.message||e.code))||'onbekende fout')}
+function loginBestuur(){const F=window.GG_FIREBASE;const naam=S.naam;const ww=(document.getElementById('ln_ww')||{}).value||'';
+  if(!naam){toast('Kies eerst je naam.',true);return}if(!ww){toast('Vul het wachtwoord in.',true);return}
+  store('gg_naam',naam);
+  firebase.auth().signInWithEmailAndPassword(F.bestuurAccount,ww)
+    .then(()=>db.doc('aanmeldingen/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)).set({naam,tijd:Date.now()}).catch(()=>{}))
+    .catch(e=>toast(loginFout(e),true))}
 function saveDoc(path,data){enqueue(path,()=>db.doc(path).set(data))}
 function saveTeams(t){S.teams=t;schedule();saveDoc('beheer/teams',{teams:t})}
 function saveJokers(j){S.jokers=j;schedule();saveDoc('beheer/jokers',{j:j})}
@@ -139,15 +165,22 @@ function header(){const c=cfg();
   const role=S.backend==='lokaal'?'Lokaal testen':S.isOwner?'Beheerder':(S.dbOk&&S.canWrite?'Bestuurslid':'Alleen lezen');
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
-  <div class="head-r"><div class="top-right"><span class="role">${role}</span><span id="status" class="status" aria-live="polite">${statusTxt()}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
+  <div class="head-r"><div class="top-right"><span class="role">${role}</span><span id="status" class="status" aria-live="polite">${statusTxt()}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
   ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':TABS.map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
 function notices(){let h='';
   if(S.backend==='lokaal')h+='<div class="notice"><b>Lokaal testen.</b> Firebase is nog niet ingesteld (js/firebase-config.js). Alles wordt alleen in deze browser bewaard.</div>';
-  if(S.noAccess)h+=`<div class="notice bad"><b>Nog geen toegang.</b> Je bent ingelogd als ${esc(S.email)}, maar dit adres staat nog niet op de lijst. Vraag de beheerder om je e-mailadres toe te voegen. Daarna herlaad je de pagina.</div>`;
+  if(S.noAccess)h+=S.isBestuur?'<div class="notice bad"><b>Nog geen toegang.</b> Het bestuursaccount is nog niet goedgekeurd. Vraag de beheerder om bij Instellingen het wachtwoord opnieuw in te stellen. Daarna herlaad je de pagina.</div>'
+    :`<div class="notice bad"><b>Nog geen toegang.</b> Je bent ingelogd als ${esc(S.email)}, maar dit adres staat nog niet op de lijst. Vraag de beheerder om je e-mailadres toe te voegen. Daarna herlaad je de pagina.</div>`;
   else if(S.loadSlow&&!S.fresh)h+='<div class="notice">De gegevens zijn nog niet bereikbaar. Controleer je internetverbinding. De pagina probeert het zelf opnieuw.</div>';
   else if(S.dbOk&&!S.canWrite)h+='<div class="notice">Je kunt meekijken, maar niets wijzigen.</div>';
   return h}
-function vLogin(){return `<div class="login">${OWL}<h2>Welkom bij de uitslagen</h2><p class="mut">Log in met je Google-account om vragen en scores in te vullen. Alles wordt direct opgeslagen.</p><button class="btn primary big" data-act="login">Inloggen met Google</button></div>`}
+function vLogin(){const N=S.namen||[];
+  const kies=N.length?`<p class="mut">Kies je naam en vul het wachtwoord van het bestuur in. Alles wordt direct opgeslagen.</p>
+    <label class="fld"><span>Je naam</span><select class="inp" id="ln_naam" data-act="ln-naam"><option value="">Kies je naam…</option>${N.map(n=>`<option value="${esc(n)}"${n===S.naam?' selected':''}>${esc(n)}</option>`).join('')}</select></label>
+    <label class="fld"><span>Wachtwoord</span><input class="inp" id="ln_ww" type="password" autocomplete="current-password"></label>
+    <button class="btn primary big" data-act="login-bestuur">Inloggen</button>`
+    :'<p class="mut">De beheerder heeft nog geen bestuursleden ingesteld.</p>';
+  return `<div class="login">${OWL}<h2>Welkom bij de uitslagen</h2>${kies}<div class="login-beh"><p class="mut">Ben je de beheerder?</p><button class="btn" data-act="login">Inloggen met Google</button></div></div>`}
 function view(){if(S.needLogin)return vLogin();if(S.noAccess)return '';let t=S.tab;if(BTABS.some(x=>x[0]===t)&&!S.isOwner)t='nakijken';
   return({nakijken:vNakijken,vragen:vVragen,overzicht:vOverzicht,uitslag:vUitslag,stats:vStats,teams:vTeams,jokers:vJokers,instellingen:vInst}[t]||vNakijken)()}
 function empty(t,p){return `<div class="empty"><h3>${t}</h3><p>${p}</p></div>`}
@@ -416,7 +449,7 @@ function vInst(){const c=cfg();const R=rubs();
     <label class="fld"><span>Editie</span><input class="inp" id="c_editie" data-act="cfg" data-f="editie" value="${esc(c.editie)}" placeholder="Bijv. Editie 6 (2026)"></label>
     <label class="fld"><span>Aantal juryleden (creatief)</span><select class="inp" id="c_jury" data-act="cfg" data-f="jury">${[1,2,3,4,5,6].map(n=>`<option${n===jury()?' selected':''}>${n}</option>`).join('')}</select></label>
   </div></div></div>
-  ${S.backend==='firebase'?`<div class="panel"><h3>Toegang bestuur</h3><div class="pad"><p class="mut" style="margin:0">Google-adressen van bestuursleden die mogen invullen, één per regel. Wordt automatisch opgeslagen zodra je buiten het vak klikt.</p><textarea class="inp" id="toegang" data-act="toegang" rows="6" placeholder="naam@gmail.com">${esc((S.toegang||[]).join('\n'))}</textarea></div></div>`:''}
+  ${S.backend==='firebase'?vToegang():''}
   <div class="panel"><h3>Rubrieken</h3><div class="lrow rb lhead"><span style="text-align:center">#</span><span>Naam</span><span class="soort">Soort</span><span>Vragen</span><span>Max punten</span><span></span></div>`;
   R.forEach((r,i)=>{const ck='drb_'+r.id;const on=S.confirm===ck;
     h+=`<div class="lrow rb"><span class="ln">${code(r)}</span><input class="inp" id="rn_${r.id}" data-act="rb" data-f="naam" data-i="${i}" value="${esc(r.naam)}" aria-label="Naam rubriek ${code(r)}"><span class="soort mut">${{sponsor:'Sponsor · geen joker',geheim:'Geheim · geen joker',overig:'Extra punten · geen joker',normaal:'Normaal'}[r.soort]||''}</span>
@@ -424,6 +457,17 @@ function vInst(){const c=cfg();const R=rubs();
     ${r.soort==='normaal'?`<button class="ibtn${on?' danger':''}" data-act="rb-del" data-i="${i}" data-ck="${ck}" aria-label="Rubriek verwijderen">${on?'Zeker?':'✕'}</button>`:'<span></span>'}</div>`});
   h+=`<div class="efoot" style="padding-left:12px"><button class="btn" data-act="rb-add">+ Rubriek toevoegen</button><span class="mut">Een verwijderde rubriek verdwijnt uit de uitslag. Ingevulde punten blijven bewaard.</span></div></div>`;
   return h}
+
+const tijdTxt=t=>new Date(t).toLocaleString('nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+function vToegang(){const B=S.bestuur||{};const A=(S.aanm||[]).slice().sort((a,b)=>b.tijd-a.tijd).slice(0,50);
+  return `<div class="panel"><h3>Toegang bestuur</h3><div class="pad">
+    <p class="mut" style="margin:0">Bestuursleden kiezen op het inlogscherm hun naam en vullen het algemene wachtwoord in.</p>
+    <label class="fld"><span>Namen van bestuursleden (één per regel)</span><textarea class="inp" id="namen" data-act="namen" rows="6" placeholder="Piet&#10;Marieke&#10;…">${esc((S.namen||[]).join('\n'))}</textarea></label>
+    <label class="fld"><span>Algemeen wachtwoord (minstens 6 tekens)</span><input class="inp" id="bww" value="${esc(B.ww||'')}" autocomplete="off" spellcheck="false"></label>
+    <div class="efoot" style="padding:0;border:0"><button class="btn primary" data-act="bww">Wachtwoord instellen</button><span class="mut">${B.uid?'Het wachtwoord is ingesteld. Wijzig je het, dan moet iedereen opnieuw inloggen.':'Nog geen wachtwoord ingesteld: bestuursleden kunnen nog niet inloggen.'}</span></div>
+    <label class="fld"><span>Extra: Google-adressen met toegang (mag leeg blijven)</span><textarea class="inp" id="toegang" data-act="toegang" rows="3" placeholder="naam@gmail.com">${esc((S.toegang||[]).join('\n'))}</textarea></label>
+  </div></div>
+  <div class="panel"><h3>Wie heeft ingelogd</h3><div class="pad">${A.length?`<ul class="aanm">${A.map(x=>`<li><b>${esc(x.naam)}</b><span class="mut">${esc(tijdTxt(x.tijd))}</span></li>`).join('')}</ul>`:'<p class="mut" style="margin:0">Nog niemand heeft met naam en wachtwoord ingelogd.</p>'}</div></div>`}
 
 /* ---------- invoer ---------- */
 function parseScore(str,max){str=String(str).trim().toLowerCase();if(str==='')return{v:null};
@@ -456,10 +500,13 @@ $app.addEventListener('keydown',e=>{const el=e.target;
   if(e.key!=='Enter'||el.tagName==='TEXTAREA')return;
   if(el.dataset.act==='score'){e.preventDefault();const nx=nextScoreInput(el);const ok=commitScore(el);
     if(ok&&nx){S.pf=nx.id;if(!raf){nx.focus();nx.select()}}return}
+  if(el.id==='ln_ww'){e.preventDefault();loginBestuur();return}
   if(el.tagName==='INPUT'){e.preventDefault();el.blur()}});
 $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!a)return;dirty.delete(el.id);const v=el.value;
   if(a==='score'){commitScore(el);return}
   if(a==='toegang'){const list=[...new Set(v.split(/[\s,;]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@')))];saveToegang(list);toast(list.length+' adressen hebben toegang.');return}
+  if(a==='namen'){const list=[...new Set(v.split('\n').map(x=>x.trim()).filter(Boolean))];saveNamen(list);toast(list.length+(list.length===1?' naam staat':' namen staan')+' op het inlogscherm.');return}
+  if(a==='ln-naam'){S.naam=v;return}
   if(a==='rub'){S.rid=v;store('gg_rid',v);render();return}
   if(a==='teamsel'){S.team=+v;store('gg_team',v);schedule();return}
   if(a==='vf'){const q=+el.dataset.q,rid=el.dataset.rid;const o=curVraag(rid,q);const f=el.dataset.f;
@@ -475,6 +522,13 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
 $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const a=el.dataset.act;
   if(a==='login'){const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});firebase.auth().signInWithPopup(p).catch(e=>{if(e&&e.code!=='auth/popup-closed-by-user')toast('Inloggen lukte niet: '+(e.message||e.code),true)});return}
   if(a==='logout'){firebase.auth().signOut().then(()=>location.reload());return}
+  if(a==='login-bestuur'){loginBestuur();return}
+  if(a==='bww'){const ww=(document.getElementById('bww').value||'').trim();if(ww.length<6){toast('Het wachtwoord moet minstens 6 tekens hebben.',true);return}
+    dirty.delete('bww');el.disabled=true;
+    zetBestuurWw(ww).then(()=>toast('Het algemene wachtwoord is ingesteld.')).catch(e=>{el.disabled=false;const c=e&&e.code;
+      toast(c==='auth/operation-not-allowed'?'Zet eerst in Firebase bij Authentication de inlogmethode "E-mailadres/wachtwoord" aan.'
+        :c==='geen-oud'?'Het bestuursaccount bestaat al, maar het oude wachtwoord is onbekend. Verwijder het account in Firebase bij Authentication en probeer opnieuw.'
+        :c==='auth/weak-password'?'Dit wachtwoord is te zwak. Kies een langer wachtwoord.':'Instellen lukte niet: '+((e&&(e.message||c))||'onbekende fout'),true)});return}
   if(a==='tab'){S.tab=el.dataset.tab;try{history.replaceState(null,'','#'+S.tab)}catch(x){}render();window.scrollTo(0,0);return}
   if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
@@ -505,19 +559,25 @@ function subscribe(){if(subscribed)return;subscribed=true;
   db.doc('beheer/config').onSnapshot(s=>{const d=s.exists?s.data():null;S.config=d&&Array.isArray(d.rubrieken)?metOverig(d):null;VC={};if(!s.metadata.fromCache)gotFresh();schedule()},err);
   db.doc('beheer/teams').onSnapshot(s=>{S.teams=(s.exists&&s.data().teams)||{};schedule()},err);
   db.doc('beheer/jokers').onSnapshot(s=>{S.jokers=(s.exists&&s.data().j)||{};schedule()},err);
-  if(S.isOwner&&S.backend==='firebase')db.doc('beheer/toegang').onSnapshot(s=>{S.toegang=(s.exists&&s.data().emails)||[];schedule()},err);
+  if(S.isOwner&&S.backend==='firebase'){
+    db.doc('beheer/toegang').onSnapshot(s=>{S.toegang=(s.exists&&s.data().emails)||[];schedule()},err);
+    db.doc('beheer/bestuur').onSnapshot(s=>{S.bestuur=(s.exists&&s.data())||{};schedule()},err);
+    db.collection('aanmeldingen').onSnapshot(qs=>{S.aanm=qs.docs.map(d=>d.data()).filter(x=>x&&x.naam);schedule()},err)}
   db.collection('vragen').onSnapshot(qs=>{const o={};qs.docs.forEach(d=>{o[d.id]=d.data()});S.vragen=o;VC={};schedule()},err);
   db.collection('scores').onSnapshot(qs=>{const o={};qs.docs.forEach(d=>{o[d.id]=d.data()});S.scores=o;schedule()},err);
   setTimeout(()=>{if(!S.fresh&&!S.noAccess){S.loadSlow=true;schedule()}},10000);
 }
 function init(){const O=window.GGOpslag;
   if(O.firebaseIngesteld()){const F=window.GG_FIREBASE;S.backend='firebase';
-    firebase.initializeApp(F.config);
+    firebase.initializeApp(F.config);db=O.firebaseOpslag(firebase.firestore());
+    // namenlijst voor het inlogscherm (mag iedereen lezen)
+    db.doc('publiek/bestuur').onSnapshot(s=>{S.namen=(s.exists&&s.data().namen)||[];schedule()},()=>{});
     firebase.auth().onAuthStateChanged(u=>{
       if(!u){S.needLogin=true;S.email='';render();return}
       S.needLogin=false;S.email=(u.email||'').toLowerCase();
       S.isOwner=S.email===String(F.beheerder||'').trim().toLowerCase();
-      S.dbOk=true;S.canWrite=true;db=O.firebaseOpslag(firebase.firestore());subscribe();render()});
+      S.isBestuur=S.email===String(F.bestuurAccount||'').trim().toLowerCase();
+      S.dbOk=true;S.canWrite=true;subscribe();render()});
     render();return}
   S.backend='lokaal';db=O.lokaleOpslag();S.dbOk=true;S.isOwner=true;S.canWrite=true;subscribe();render()}
 init();

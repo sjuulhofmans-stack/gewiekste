@@ -28,12 +28,12 @@ Zolang Firebase niet is ingevuld, werkt de app **lokaal**: alles blijft alleen i
 
 1. Ga naar <https://console.firebase.google.com> en maak een project (bijv. `gewiekste-uitslagen`).
 2. **Build → Firestore Database → Database maken**, locatie `europe-west`, productiemodus.
-3. **Build → Authentication → Aan de slag →** zet **Google** aan.
+3. **Build → Authentication → Aan de slag →** zet **Google** én **E-mailadres/wachtwoord** aan.
 4. **Projectinstellingen (tandwiel) → Je apps → web (`</>`)**. Kopieer de `firebaseConfig` naar `js/firebase-config.js`.
 5. **Firestore Database → Regels**: plak de inhoud van `firestore.rules` en klik **Publiceren**.
 6. **Authentication → Instellingen → Geautoriseerde domeinen**: voeg `JOUWNAAM.github.io` toe (`localhost` staat er al).
 
-Log daarna in als beheerder. Ga naar **Instellingen → Toegang bestuur** en zet daar de Google-adressen van de bestuursleden neer.
+Log daarna in als beheerder (met Google). Ga naar **Instellingen → Toegang bestuur**: zet daar de namen van de bestuursleden neer en stel het algemene wachtwoord in. Bestuursleden kiezen op het inlogscherm hun naam en vullen dat wachtwoord in. Onder **Wie heeft ingelogd** zie je wie er wanneer is ingelogd.
 
 ## 3. Online zetten met GitHub Pages
 

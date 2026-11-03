@@ -4,8 +4,13 @@ rules_version = '2';
 // Plak dit in de Firebase-console: Firestore Database -> tabblad "Regels" -> Publiceren.
 //
 // - De beheerder (e-mail hieronder) mag alles.
-// - Bestuursleden op de lijst beheer/toegang mogen vragen en scores invullen
-//   en alles lezen, maar teams, jokers en instellingen niet wijzigen.
+// - Bestuursleden loggen in met het gezamenlijke bestuursaccount (naam kiezen +
+//   algemeen wachtwoord). Dat account staat in beheer/bestuur (uid).
+//   Extra Google-adressen op de lijst beheer/toegang mogen hetzelfde.
+//   Bestuursleden mogen vragen en scores invullen en alles lezen,
+//   maar teams, jokers en instellingen niet wijzigen.
+// - De namenlijst voor het inlogscherm (publiek/bestuur) mag iedereen lezen.
+// - Wie er heeft ingelogd (aanmeldingen) ziet alleen de beheerder.
 // - Iedereen anders mag niets.
 
 service cloud.firestore {
@@ -18,15 +23,29 @@ service cloud.firestore {
       // Zelfde adres als "beheerder" in js/firebase-config.js (kleine letters)
       return ingelogd() && request.auth.token.email.lower() == 'sjuulhofmans@gmail.com';
     }
+    function isBestuursaccount() {
+      return request.auth != null
+        && exists(/databases/$(database)/documents/beheer/bestuur)
+        && request.auth.uid == get(/databases/$(database)/documents/beheer/bestuur).data.uid;
+    }
     function isBestuur() {
-      return isBeheerder() || (ingelogd()
+      return isBeheerder() || isBestuursaccount() || (ingelogd()
         && exists(/databases/$(database)/documents/beheer/toegang)
         && request.auth.token.email.lower() in get(/databases/$(database)/documents/beheer/toegang).data.emails);
     }
 
     match /beheer/{doc} {
-      allow read: if isBestuur();
+      // beheer/bestuur bevat het wachtwoord: alleen voor de beheerder
+      allow read: if isBestuur() && doc != 'bestuur';
+      allow read, write: if isBeheerder();
+    }
+    match /publiek/{doc} {
+      allow read: if true;
       allow write: if isBeheerder();
+    }
+    match /aanmeldingen/{id} {
+      allow create: if isBestuur() && request.resource.data.keys().hasOnly(['naam', 'tijd']);
+      allow read, delete: if isBeheerder();
     }
     match /vragen/{rubriek} {
       allow read, write: if isBestuur();
