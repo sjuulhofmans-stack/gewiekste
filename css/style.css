@@ -167,13 +167,14 @@ col.wsp{width:28px}
 .qa{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* vragen & antwoorden: vraag voor vraag. Links de lijst met vragen (bolletje = stand), rechts één vraag. */
-.vq-grid{display:grid;grid-template-columns:280px minmax(0,1fr);gap:18px;align-items:start}
+.vq-grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px;align-items:start}
 .vq-nav{background:var(--surface);border:1.5px solid var(--line-strong);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
-.vq-nav button{display:grid;grid-template-columns:56px minmax(0,1fr) 14px;gap:8px;align-items:center;height:var(--rowT);padding:0 14px 0 0;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;cursor:pointer}
+.vq-nav button{display:grid;grid-template-columns:56px minmax(0,1fr) auto 14px;gap:8px;align-items:center;height:var(--rowT);padding:0 14px 0 0;border:0;border-top:1px solid var(--line);background:transparent;text-align:left;cursor:pointer}
 .vq-nav button:first-child{border-top:0}
 .vq-nav button:hover{background:var(--surface-2)}
 .vq-nav .nr{font-family:var(--font-display);font-weight:800;font-size:1.1rem;text-align:center}
 .vq-nav .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vq-nav .p{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap;opacity:.8}
 .vq-nav button[aria-current="true"]{background:var(--nk-q);color:var(--nk-q-ink)}
 .dot{width:14px;height:14px;border-radius:50%;background:var(--line-strong)}
 .dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
@@ -304,7 +305,7 @@ body.show-open{overflow:hidden}
   .vq-grid{grid-template-columns:1fr}
   .vq-nav{flex-direction:row;flex-wrap:wrap}
   .vq-nav button{grid-template-columns:auto 14px;padding:0 12px;border-top:0;border-right:1px solid var(--line)}
-  .vq-nav .t{display:none}
+  .vq-nav .t,.vq-nav .p{display:none}
   .vq-card{padding:14px}
   .vq-set{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .vq-set .fld:last-child{grid-column:1/-1}

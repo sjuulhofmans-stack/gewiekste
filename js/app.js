@@ -284,7 +284,7 @@ function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som
   const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('')}</select>`;
   const RJ=rubJury(r);
   let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}${RJ.length?`<span class="mut">Verantwoordelijk: <b>${RJ.map(esc).join(', ')}</b></span>`:''}</div><div class="vq-grid"><nav class="vq-nav" aria-label="Vragen">`;
-  V.forEach((x,i)=>{h+=`<button data-act="vq" data-q="${i+1}"${i+1===q?' aria-current="true"':''}><span class="nr">${pc}.${i+1}</span><span class="t">${x.titel?esc(x.titel):'Nog leeg'}</span><span class="dot ${vraagStatus(x)[0]}" title="${vraagStatus(x)[1]}"></span></button>`});
+  V.forEach((x,i)=>{h+=`<button data-act="vq" data-q="${i+1}"${i+1===q?' aria-current="true"':''}><span class="nr">${pc}.${i+1}</span><span class="t">${x.titel?esc(x.titel):'Nog leeg'}</span><span class="p">${x.punten?x.punten+' pt':'–'}</span><span class="dot ${vraagStatus(x)[0]}" title="${vraagStatus(x)[1]}"></span></button>`});
   h+=`</nav><section class="vq-card"><div class="vq-top"><h2>Vraag ${pc}.${q}</h2>${v.soort==='creatief'?'<span class="badge joker">Creatief · jury</span>':''}<span class="badge ${st[0]}">${st[1]}</span></div>
     <label class="fld"><span>Titel van de vraag</span><input class="inp vq-titel" id="e_${r.id}_${q}_titel" data-act="vf" data-f="titel" ${base} value="${esc(v.titel)}" placeholder="Titel van de vraag of opdracht"${d}></label>
     <div class="vq-set"><label class="fld"><span>Nakijken</span>${sel('soort',[['antwoord','Goed / fout (antwoorden)'],['creatief','Creatief (jury)']],v.soort)}</label>
