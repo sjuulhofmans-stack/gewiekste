@@ -37,10 +37,13 @@ const DEF={naam:'Genneps Gewiekste',editie:'6e editie',jury:3,rubrieken:[
 function metOverig(c){if(c&&Array.isArray(c.rubrieken)&&!c.rubrieken.some(r=>r.soort==='overig'))c.rubrieken.push({id:'ov',naam:'Overige',soort:'overig',vragen:1,max:1000});return c}
 const TABS=[['vragen','Vragen & antwoorden'],['nakijken','Nakijken'],['overzicht','Totaaloverzicht'],['uitslag','Uitslag'],['stats','Statistieken']];
 const BTABS=[['teams','Teams'],['jokers','Jokers'],['instellingen','Instellingen']];
+// bestuursleden zien alleen Vragen & antwoorden, en Nakijken zodra de beheerder dat aanzet (config.nakijken)
+function nakijkenAan(){return cfg().nakijken===true}
+function mijnTabs(){return S.isOwner?TABS:TABS.filter(t=>t[0]==='vragen'||(t[0]==='nakijken'&&nakijkenAan()))}
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
   isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],dbOk:null,loadSlow:false,saving:0,
-  tab:'nakijken',rid:null,mode:'raster',team:null,confirm:null,pf:null};
+  tab:'vragen',rid:null,mode:'raster',team:null,confirm:null,pf:null};
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
 
@@ -175,7 +178,7 @@ function header(){const c=cfg();
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
   <div class="head-r"><div class="top-right"><span class="role">${role}</span><span id="status" class="status" aria-live="polite">${statusTxt()}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
-  ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':TABS.map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
+  ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':mijnTabs().map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
 // vaste meldingen als [sleutel, soort, tekst]; getoond als kaartje rechtsonder
 function notices(){const h=[];
   if(S.backend==='lokaal')h.push(['lokaal','info','<b>Lokaal testen.</b> Firebase is nog niet ingesteld (js/firebase-config.js). Alles wordt alleen in deze browser bewaard.']);
@@ -184,6 +187,10 @@ function notices(){const h=[];
   else if(S.loadSlow&&!S.fresh)h.push(['traag','info','<b>Even geduld.</b> De gegevens zijn nog niet bereikbaar. Controleer je internetverbinding. De pagina probeert het zelf opnieuw.']);
   else if(S.dbOk&&!S.canWrite)h.push(['lezen','info','Je kunt meekijken, maar niets wijzigen.']);
   return h}
+// wachtwoordvak met een knop om te wisselen tussen bolletjes en leesbare tekst
+const toonWw={};
+function wwVeld(id,val,extra){const t=!!toonWw[id];
+  return `<div class="ww-rij"><input class="inp" id="${id}" type="${t?'text':'password'}" value="${esc(val)}" spellcheck="false" ${extra}><button type="button" class="btn" data-act="toon-ww" data-for="${id}" aria-pressed="${t}">${t?'Verbergen':'Tonen'}</button></div>`}
 function vLogin(){const N=S.namen||[];
   const kies=N.length?`<p class="mut">Kies je naam en vul het wachtwoord van het bestuur in. Alles wordt direct opgeslagen.</p>
     <label class="fld"><span>Je naam</span><select class="inp" id="ln_naam" data-act="ln-naam"><option value="">Kies je naam…</option>${N.map(n=>`<option value="${esc(n)}"${n===S.naam?' selected':''}>${esc(n)}</option>`).join('')}</select></label>
@@ -191,13 +198,9 @@ function vLogin(){const N=S.namen||[];
     <button class="btn primary big" data-act="login-bestuur">Inloggen</button>`
     :'<p class="mut">De beheerder heeft nog geen bestuursleden ingesteld.</p>';
   return `<div class="login">${OWL}<h2>Welkom bij het nakijken en de uitslagen</h2>${kies}<div class="login-beh"><p class="mut">Ben je de beheerder?</p><button class="btn" data-act="login">Inloggen met Google</button></div></div>`}
-function view(){if(S.needLogin)return vLogin();if(S.noAccess)return '';let t=S.tab;if(BTABS.some(x=>x[0]===t)&&!S.isOwner)t='nakijken';
+function view(){if(S.needLogin)return vLogin();if(S.noAccess)return '';let t=S.tab;if(!S.isOwner&&!mijnTabs().some(x=>x[0]===t))t='vragen';
   return({nakijken:vNakijken,vragen:vVragen,overzicht:vOverzicht,uitslag:vUitslag,stats:vStats,teams:vTeams,jokers:vJokers,instellingen:vInst}[t]||vNakijken)()}
 function empty(t,p){return `<div class="empty"><h3>${t}</h3><p>${p}</p></div>`}
-// wachtwoordvak met een knop om te wisselen tussen bolletjes en leesbare tekst
-const toonWw={};
-function wwVeld(id,val,extra){const t=!!toonWw[id];
-  return `<div class="ww-rij"><input class="inp" id="${id}" type="${t?'text':'password'}" value="${esc(val)}" spellcheck="false" ${extra}><button type="button" class="btn" data-act="toon-ww" data-for="${id}" aria-pressed="${t}">${t?'Verbergen':'Tonen'}</button></div>`}
 // rubriekkeuze: één uitklapmenu in plaats van een rij knoppen
 function rubSelect(){ensureRid();return `<label class="rubsel"><span>Rubriek</span><select class="inp sel-rub" id="rubsel" data-act="rub">${rubs().map(r=>`<option value="${r.id}"${r.id===S.rid?' selected':''}>${code(r)} · ${esc(r.naam)}</option>`).join('')}</select></label>`}
 const dis=()=>S.canWrite&&S.dbOk?'':' disabled';
@@ -457,7 +460,13 @@ function vJokers(){const T=teams();const N=rubs().filter(r=>r.soort==='normaal')
     h+=`<div class="lrow jk"><span class="ln">${t.nr}</span><span class="qa">${t.naam?esc(t.naam):'<i>Geen naam</i>'}</span><select class="inp" id="jk_${t.nr}" data-act="joker" data-nr="${t.nr}" aria-label="Joker team ${t.nr}"><option value="">Geen joker</option>${N.map(r=>`<option value="${r.id}"${r.id===cur?' selected':''}>${code(r)} · ${esc(r.naam)}</option>`).join('')}</select></div>`});
   return h+'</div>'}
 function vInst(){const c=cfg();const R=rubs();
+  const nk=nakijkenAan();
   let h=`<div class="rhead"><div><h2>Instellingen</h2><p class="mut">Alleen jij kunt dit wijzigen. Wijzigingen zijn direct zichtbaar voor iedereen.</p></div></div>
+  <div class="panel"><h3>Nakijken voor het bestuur</h3><div class="pad">
+    <div class="toolbar"><div class="seg" role="group" aria-label="Nakijken voor het bestuur"><button data-act="nk-aan" data-v="uit" aria-pressed="${!nk}">Uit</button><button data-act="nk-aan" data-v="aan" aria-pressed="${nk}">Aan</button></div>
+    <span class="badge ${nk?'ok':'warn'}">${nk?'Het bestuur kan nu nakijken':'Het bestuur ziet alleen Vragen &amp; antwoorden'}</span></div>
+    <p class="mut" style="margin:0">Zet dit aan als alle vragen en opdrachten klaar zijn. Bestuursleden zien dan ook het tabblad Nakijken. Totaaloverzicht, Uitslag en Statistieken blijven alleen voor jou.</p>
+  </div></div>
   <div class="panel"><h3>Kwis</h3><div class="pad"><div class="formgrid">
     <label class="fld"><span>Naam</span><input class="inp" id="c_naam" data-act="cfg" data-f="naam" value="${esc(c.naam)}"></label>
     <label class="fld"><span>Editie</span><input class="inp" id="c_editie" data-act="cfg" data-f="editie" value="${esc(c.editie)}" placeholder="Bijv. Editie 6 (2026)"></label>
@@ -537,6 +546,9 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='login'){const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});firebase.auth().signInWithPopup(p).catch(e=>{if(e&&e.code!=='auth/popup-closed-by-user')toast('Inloggen lukte niet: '+(e.message||e.code),true)});return}
   if(a==='logout'){firebase.auth().signOut().then(()=>location.reload());return}
   if(a==='login-bestuur'){loginBestuur();return}
+  // direct in de pagina wisselen (niet opnieuw opbouwen), zodat wat al getypt is blijft staan
+  if(a==='toon-ww'){const id=el.dataset.for;const inp=document.getElementById(id);if(!inp)return;const t=toonWw[id]=!toonWw[id];
+    inp.type=t?'text':'password';el.textContent=t?'Verbergen':'Tonen';el.setAttribute('aria-pressed',t);inp.focus();return}
   if(a==='bww'){const ww=(document.getElementById('bww').value||'').trim();if(ww.length<6){toast('Het wachtwoord moet minstens 6 tekens hebben.',true);return}
     dirty.delete('bww');el.disabled=true;
     zetBestuurWw(ww).then(()=>toast('Het algemene wachtwoord is ingesteld.')).catch(e=>{el.disabled=false;const c=e&&e.code;
@@ -547,9 +559,7 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='mode'){S.mode=el.dataset.m;store('gg_mode',S.mode);render();return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
   if(a==='winnaar'){toonWinnaar();return}
-  // direct in de pagina wisselen (niet opnieuw opbouwen), zodat wat al getypt is blijft staan
-  if(a==='toon-ww'){const id=el.dataset.for;const inp=document.getElementById(id);if(!inp)return;const t=toonWw[id]=!toonWw[id];
-    inp.type=t?'text':'password';el.textContent=t?'Verbergen':'Tonen';el.setAttribute('aria-pressed',t);inp.focus();return}
+  if(a==='nk-aan'){const c=clone(cfg());c.nakijken=el.dataset.v==='aan';saveConfig(c);toast(c.nakijken?'Nakijken staat aan: het bestuur ziet nu het tabblad Nakijken.':'Nakijken staat uit: het bestuur ziet alleen Vragen & antwoorden.');return}
   if(a==='verberg'){const c=clone(cfg());c.onthuld=false;saveConfig(c);toast('De uitslag is weer verborgen.');return}
   if(a==='team-prev'||a==='team-next'){const T=teams();const i=T.findIndex(t=>t.nr===S.team)+(a==='team-next'?1:-1);if(T[i]){S.team=T[i].nr;store('gg_team',S.team)}render();window.scrollTo(0,0);return}
   if(a==='set'){const rid=el.dataset.rid,nr=+el.dataset.nr,rg=el.dataset.rg,val=+el.dataset.v;if(raw(rid,nr,rg)!==val)saveScore(rid,nr,rg,val);return}
@@ -571,9 +581,14 @@ window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if([...
 
 /* ---------- opstarten ---------- */
 function gotFresh(){if(!S.fresh){S.fresh=true;S.loadSlow=false;setStatus()}}
+// scores alleen ophalen als je mag nakijken (beheerder altijd, bestuur zodra Nakijken aan staat)
+let scoreSub=null;
+function volgScores(){if(!db)return;const mag=S.isOwner||nakijkenAan();
+  if(mag&&!scoreSub)scoreSub=db.collection('scores').onSnapshot(qs=>{const o={};qs.docs.forEach(d=>{o[d.id]=d.data()});S.scores=o;schedule()},()=>{scoreSub=null});
+  else if(!mag&&scoreSub){scoreSub();scoreSub=null;S.scores={}}}
 function subscribe(){if(subscribed)return;subscribed=true;
   const err=e=>{if(e&&e.code==='permission-denied'){S.noAccess=true;S.canWrite=false}else S.loadSlow=true;schedule()};
-  db.doc('beheer/config').onSnapshot(s=>{const d=s.exists?s.data():null;S.config=d&&Array.isArray(d.rubrieken)?metOverig(d):null;VC={};if(!s.metadata.fromCache)gotFresh();schedule()},err);
+  db.doc('beheer/config').onSnapshot(s=>{const d=s.exists?s.data():null;S.config=d&&Array.isArray(d.rubrieken)?metOverig(d):null;VC={};if(!s.metadata.fromCache)gotFresh();volgScores();schedule()},err);
   db.doc('beheer/teams').onSnapshot(s=>{S.teams=(s.exists&&s.data().teams)||{};schedule()},err);
   db.doc('beheer/jokers').onSnapshot(s=>{S.jokers=(s.exists&&s.data().j)||{};schedule()},err);
   if(S.isOwner&&S.backend==='firebase'){
@@ -581,7 +596,7 @@ function subscribe(){if(subscribed)return;subscribed=true;
     db.doc('beheer/bestuur').onSnapshot(s=>{S.bestuur=(s.exists&&s.data())||{};schedule()},err);
     db.collection('aanmeldingen').onSnapshot(qs=>{S.aanm=qs.docs.map(d=>d.data()).filter(x=>x&&x.naam);schedule()},err)}
   db.collection('vragen').onSnapshot(qs=>{const o={};qs.docs.forEach(d=>{o[d.id]=d.data()});S.vragen=o;VC={};schedule()},err);
-  db.collection('scores').onSnapshot(qs=>{const o={};qs.docs.forEach(d=>{o[d.id]=d.data()});S.scores=o;schedule()},err);
+  volgScores();
   setTimeout(()=>{if(!S.fresh&&!S.noAccess){S.loadSlow=true;schedule()}},10000);
 }
 function init(){const O=window.GGOpslag;

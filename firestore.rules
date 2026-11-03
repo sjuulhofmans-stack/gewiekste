@@ -7,8 +7,9 @@ rules_version = '2';
 // - Bestuursleden loggen in met het gezamenlijke bestuursaccount (naam kiezen +
 //   algemeen wachtwoord). Dat account staat in beheer/bestuur (uid).
 //   Extra Google-adressen op de lijst beheer/toegang mogen hetzelfde.
-//   Bestuursleden mogen vragen en scores invullen en alles lezen,
-//   maar teams, jokers en instellingen niet wijzigen.
+//   Bestuursleden mogen vragen invullen en alles lezen, maar teams, jokers en
+//   instellingen niet wijzigen. Scores (nakijken) mogen ze pas lezen en invullen
+//   als de beheerder bij Instellingen "Nakijken voor het bestuur" aanzet.
 // - De namenlijst voor het inlogscherm (publiek/bestuur) mag iedereen lezen.
 // - Wie er heeft ingelogd (aanmeldingen) ziet alleen de beheerder.
 // - Iedereen anders mag niets.
@@ -33,6 +34,10 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/beheer/toegang)
         && request.auth.token.email.lower() in get(/databases/$(database)/documents/beheer/toegang).data.emails);
     }
+    function nakijkenAan() {
+      return exists(/databases/$(database)/documents/beheer/config)
+        && get(/databases/$(database)/documents/beheer/config).data.get('nakijken', false) == true;
+    }
 
     match /beheer/{doc} {
       // beheer/bestuur bevat het wachtwoord: alleen voor de beheerder
@@ -51,7 +56,7 @@ service cloud.firestore {
       allow read, write: if isBestuur();
     }
     match /scores/{rubriek} {
-      allow read, write: if isBestuur();
+      allow read, write: if isBeheerder() || (isBestuur() && nakijkenAan());
     }
   }
 }
