@@ -246,7 +246,7 @@ function vNakijken(){ensureRid();const r=rub(S.rid);const T=teams();
   const G=[['s','Klein'],['m','Middel'],['l','Groot']];
   let h=`<div class="toolbar">${rubSelect()}
   <p class="hint nk-hint">Typ een getal, of <kbd>g</kbd> = goed (alle punten) en <kbd>f</kbd> = fout (0). Met <kbd>Enter</kbd> ga je naar de volgende regel, met de <kbd>pijltjes</kbd> naar elk vakje.</p>
-  <div class="seg" role="group" aria-label="Grootte van de tabel">${G.map(([k,l])=>`<button data-act="nkm" data-m="${k}" aria-pressed="${S.nkm===k}">${l}</button>`).join('')}</div></div>`;
+  <div class="rubsel"><span id="nkm-l">Weergave tabel</span><div class="seg" role="group" aria-labelledby="nkm-l">${G.map(([k,l])=>`<button data-act="nkm" data-m="${k}" aria-pressed="${S.nkm===k}">${l}</button>`).join('')}</div></div></div>`;
   if(!T.length)return h+empty('Er zijn nog geen teams','De beheerder maakt de teams aan onder Teams. Daarna verschijnen ze hier.');
   return h+raster(r,T)}
 
