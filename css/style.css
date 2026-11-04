@@ -281,9 +281,12 @@ col.wsp{width:28px}
 .grid-wrap.ov{width:fit-content;max-width:100%;margin-inline:auto}
 .grid.ov{table-layout:auto}
 .grid.ov .tl{overflow:visible;text-overflow:clip;min-width:200px}
-/* rubriekkolommen even breed; de volledige rubrieknaam loopt door over meerdere regels */
-.grid.ov thead th:not(.stk){width:100px;min-width:100px;max-width:100px;height:auto;padding:6px 4px;white-space:normal;vertical-align:bottom}
-.grid.ov .tnm{font-size:.8rem;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;hyphens:auto;padding:2px 0 0}
+/* rubriekkolommen even breed; nummers bovenaan op één lijn, de rubrieknaam eronder in een vak van
+   precies 3 regels (langer wordt afgekapt met …, de hele naam zie je als je er met de muis op gaat staan) */
+.grid.ov thead th:not(.stk){width:100px;min-width:100px;max-width:100px;height:auto;padding:6px 4px;white-space:normal;vertical-align:top}
+.grid.ov thead th.stk{vertical-align:top;padding-top:6px}
+.grid.ov .tnm{font-size:.8rem;line-height:1.2;height:3.6em;white-space:normal;overflow:hidden;text-overflow:clip;overflow-wrap:break-word;hyphens:auto;padding:0;margin-top:2px;
+  display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3}
 .uitslag .grid-wrap{max-height:none;min-height:0;max-width:100%}
 col.wu{width:360px}
 /* uitslag: teamnaam links, teamnummer als rustige pil rechts in de cel */
