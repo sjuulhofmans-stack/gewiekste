@@ -279,7 +279,7 @@ col.wu{width:360px}
 /* uitslag: teamnaam links, teamnummer als rustige pil rechts in de cel */
 .tcel{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
 .tnaam{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.tnr{flex:none;font-size:.78rem;font-weight:700;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-variant-numeric:tabular-nums}
+.tnr{flex:none;width:6.4em;text-align:center;font-size:.78rem;font-weight:700;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 0;font-variant-numeric:tabular-nums} /* vaste breedte: alle pillen even groot, van Team 1 t/m Team 99 */
 
 /* statistieken: kaartjes met één groot getal */
 .stitle{font-size:1.15rem;margin:6px 0 -6px}
