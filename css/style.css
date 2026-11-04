@@ -7,7 +7,9 @@ body{margin:0}
 /* Layout: nachtblauwe kopband met tabbladen, daaronder één werkvlak; alle invulregels vaste hoogte */
 :root{
   --bg:#F1F4F8; --surface:#FFFFFF; --surface-2:#E7ECF3; --line:#D2DAE5; --line-strong:#9AA9BE;
-  --field:#EEF4FF; --field-hover:#E3ECFC; /* invulvakken bij vragen & antwoorden: duidelijk anders dan de kaart */
+  --field:#EEF4FF; --field-hover:#E3ECFC; /* invulvakken (chat): duidelijk anders dan de kaart */
+  /* invulvakken bij vragen & antwoorden: wit met donkere tekst (gelijk in licht en donker thema) */
+  --vq-field:#FFFFFF; --vq-field-hover:#F1F5FB; --vq-field-ink:#16202F; --vq-field-ph:#6B778A;
   --zebra:#EEF2F8; /* om-en-om-kleur in lijsten en tabellen */
   /* podium bij "Toon de winnaar" (gelijk in licht en donker thema) */
   --pd-1:#1E3D78; --pd-2:#0F2148; --pd-diep:#0A1226; --pd-licht:255,238,200;
@@ -214,8 +216,10 @@ col.wsp{width:28px}
 .dot{width:14px;height:14px;border-radius:50%;background:var(--line-strong)}
 .dot.ok{background:var(--good)}.dot.warn{background:var(--warn)}.dot.bad{background:var(--bad)}
 .vq-card{background:var(--surface);border:1.5px solid var(--line-strong);border-radius:14px;padding:20px;display:flex;flex-direction:column;gap:16px;min-width:0}
-.vq-card .inp{border-color:var(--line-strong);background:var(--field)}
-.vq-card .inp:hover:not(:disabled){background:var(--field-hover)}
+.vq-card .inp{border-color:var(--line-strong);background:var(--vq-field);color-scheme:light}
+.vq-card .inp,.vq-card .fld .inp{color:var(--vq-field-ink)}
+.vq-card .inp::placeholder{color:var(--vq-field-ph);opacity:1}
+.vq-card .inp:hover:not(:disabled){background:var(--vq-field-hover)}
 .vq-top{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 .vq-top h2{font-size:1.8rem;font-weight:800;margin-right:auto}
 .vq-titel{font-weight:700;font-size:1.1rem!important}
