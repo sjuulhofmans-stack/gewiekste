@@ -72,6 +72,9 @@ button,select,input,textarea{font:inherit;color:inherit}
 /* wie er nog meer online is: groen bolletje + namen bij muis erop */
 .online{display:inline-flex;align-items:center;gap:7px;font-size:.9rem;font-weight:700;cursor:default}
 .odot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 30%,transparent)}
+/* aftellen naar de kwis */
+.aftel{font-size:1rem;font-weight:700;padding:6px 14px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent);white-space:nowrap}
+.aftel b{font-family:var(--font-display);font-weight:800;font-size:1.2rem;color:var(--accent)}
 .role{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent)}
 /* account: rond knopje met beginletter, met daaronder een klein venster (rol, naam/e-mail, uitloggen) */
 .acc-wrap{position:relative}

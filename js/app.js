@@ -219,8 +219,13 @@ function header(){const c=cfg();
   const role=S.backend==='lokaal'?'Lokaal testen':S.isOwner?'Beheerder':(S.dbOk&&S.canWrite?'Bestuurslid':'Alleen lezen');
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
-  <div class="head-r"><div class="top-right">${onlineTxt()}${account(role)}</div>
+  <div class="head-r"><div class="top-right">${S.isOwner||S.needLogin?'':aftellen()}${onlineTxt()}${account(role)}</div>
   ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':mijnTabs().map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
+// aftellen naar de kwisavond (alleen voor teamleden, niet voor de beheerder)
+const KWISDAG=new Date(2028,3,1); // 1 april 2028 (maand telt vanaf 0)
+function aftellen(){const n=new Date(),v=new Date(n.getFullYear(),n.getMonth(),n.getDate());
+  const d=Math.round((KWISDAG-v)/864e5);if(d<0)return'';
+  return `<span class="aftel">${d===0?'Vandaag is de kwis!':d===1?'Morgen is de kwis!':`Nog <b>${d}</b> dagen tot de kwis`}</span>`}
 // account: een rondje met je beginletter; klik erop voor je rol, naam of e-mail en uitloggen
 function account(role){if(S.needLogin)return'';const wie=S.isBestuur?(S.naam||'Bestuur'):S.email;const open=!!S.accOpen;
   return `<div class="acc-wrap"><button class="acc" data-act="acc" aria-expanded="${open}" aria-label="Account" title="Account">${esc((wie||'?').trim().charAt(0).toUpperCase()||'?')}</button>
