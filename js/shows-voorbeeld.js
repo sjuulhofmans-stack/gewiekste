@@ -57,8 +57,22 @@ const FAN={
   ruimte:{f:131,type:'sawtooth',noten:[[0,0,1],[7,.8,1],[12,1.6,1]],t:2.4,akk:[0,7,12,16,19]},
   synth:{f:262,type:'sawtooth',noten:[[0,0,.12],[4,.12,.12],[7,.24,.12],[12,.36,.12],[16,.48,.12],[19,.6,.12],[24,.72,.6]],t:1.1,akk:[0,4,7,11,14]},
   disco:{f:220,type:'square',noten:[[12,0,.1],[12,.25,.1],[15,.5,.1],[17,.75,.25],[19,1,.4]],t:1.5,akk:[0,3,7,10,14]},
+  drop:{f:110,type:'sawtooth',noten:[],t:.05,akk:[0,7,12,15,19],drop:true},
   chip:{f:523,type:'square',noten:[[0,0,.08],[4,.09,.08],[7,.18,.08],[12,.27,.08],[7,.36,.08],[12,.45,.08],[16,.54,.08],[19,.63,.08],[24,.72,.5]],t:1.3,akk:[0,4,7,12],chip:true}
 };
+// tien losse geluiden (A t/m J) die je met elke show kunt combineren
+const GELUIDEN=[
+  {id:'A',naam:'Filmtrailer',uitleg:'Gigantische filmdreunen met na elke klap een aanzwellend gesis naar de volgende.',s:{hit:'trailer',f:36,bed:'sawtooth',beat:'geen',roffel:'riser',fan:'orkest'}},
+  {id:'B',naam:'Klokkentoren',uitleg:'Een kerkklok die bij elk getal hoger slaat, met een zware tikkende torenklok.',s:{hit:'bel',f:55,bed:'triangle',beat:'geen',klok:true,grootKlok:true,roffel:'pauk',fan:'orkest'}},
+  {id:'C',naam:'Hartslag',uitleg:'Bijna stil: alleen een bonzend hart dat steeds sneller gaat en zware ademhaling.',s:{hit:'hart',f:41,bed:'sine',beat:'adem',roffel:'snare',fan:'feest',gil:false}},
+  {id:'D',naam:'Tikkende bom',uitleg:'Piepjes van een bom die steeds sneller gaan. Bij de winnaar: een enorme knal.',s:{hit:'bom',f:55,bed:null,beat:'bom',roffel:'piep',fan:'feest',gil:false,einde:'explosie'}},
+  {id:'E',naam:'Oorlogstrommen',uitleg:'Grote Japanse taiko-trommen die steeds harder en sneller roffelen.',s:{hit:'taiko',f:55,bed:'sawtooth',beat:'taiko',roffel:'taiko',fan:'orkest'}},
+  {id:'F',naam:'Alarm',uitleg:'Een loeiende sirene die bij elk getal hoger en schriller wordt.',s:{hit:'sirene',f:55,bed:'sawtooth',beat:'kick',roffel:'snare',fan:'synth',gil:false}},
+  {id:'G',naam:'Spookhuis',uitleg:'Een zingende spooktoon, krakende deuren en een kloppend hart.',s:{hit:'spook',f:41,bed:'triangle',beat:'hart',roffel:'pauk',fan:'thriller'}},
+  {id:'H',naam:'Dansfeest',uitleg:'Een opbouw zoals in de discotheek: de trommel gaat steeds sneller tot de grote drop.',s:{hit:'drop',f:55,bed:'sawtooth',beat:'build',roffel:'snare',fan:'drop',gil:false}},
+  {id:'I',naam:'Denktijd',uitleg:'Getokkelde violen en een tikkende klok, steeds sneller, zoals bij een kwis op tv.',s:{hit:'pizz',f:110,bed:null,beat:'pizz',klok:true,roffel:'snare',fan:'synth',gil:false}},
+  {id:'J',naam:'Stadion',uitleg:'Een vol stadion: het publiek klapt steeds sneller en barst los voor de winnaar.',s:{hit:'stadion',f:55,bed:null,beat:'klap',roffel:'snare',fan:'feest',gil:false,juich:true}}
+];
 // voorbeeldteams voor het voorproefje, zodat je een show kunt bekijken zonder de uitslag te verklappen
 const DEMO=[{nr:7,naam:'De Slimme Uilen',tot:812,place:1},{nr:3,naam:'De Snelle Denkers',tot:790,place:2},{nr:12,naam:'De Nachtbrakers',tot:771,place:3}];
 
@@ -106,7 +120,20 @@ function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||windo
     // schrille violen: drie tonen die net vals samen klinken, daar word je onrustig van
     gil:(t,f,v)=>[0,1,6].forEach(n=>toon(f*st(n),t,1.3,'sawtooth',v*.045,{a:.25,lp:6000})),
     // aanzwellend gesis en een toon die steeds hoger gaat
-    riser:(t,d,v)=>{ruis(t,.15,v*.4,{type:'bandpass',f:200,f2:7000,q:3,a:d,gl:d});toon(70,t,.15,'sawtooth',v*.1,{f2:1400,gl:d,a:d,lp:5000})}
+    riser:(t,d,v)=>{ruis(t,.15,v*.4,{type:'bandpass',f:200,f2:7000,q:3,a:d,gl:d});toon(70,t,.15,'sawtooth',v*.1,{f2:1400,gl:d,a:d,lp:5000})},
+    // kerkklok: veel boventonen die lang naklinken
+    bel:(t,f,v)=>{[[1,4],[2,3],[2.4,2.5],[3,2],[4.2,1.4],[5.4,1]].forEach(([m,d],i)=>toon(f*m,t,d,'sine',v*.22/(i*.6+1),{a:.004}));ruis(t,.05,v*.2,{type:'highpass',f:3000})},
+    taiko:(t,v)=>{toon(70,t,.9,'sine',v*1.1,{f2:42,gl:.25});ruis(t,.12,v*.6,{f:700,f2:120});toon(160,t,.12,'triangle',v*.3,{f2:80})},
+    sirene:(t,d,v,f0,f1)=>toon(f0,t,d,'sawtooth',v*.06,{f2:f1,gl:d,lp:2500,a:.05}),
+    pizz:(t,f,v)=>{toon(f,t,.25,'triangle',v*.25,{lp:2500,lp2:400});toon(f*2,t,.12,'sine',v*.08)},
+    piep:(t,f,d,v)=>toon(f,t,d,'square',v*.06,{lp:4000}),
+    adem:(t,d,v,inn)=>ruis(t,d*.4,v*.25,{type:'bandpass',f:inn?900:600,f2:inn?1400:400,q:1.5,a:d*.6}),
+    publiek:(t,d,v)=>{ruis(t,d*.5,v*.4,{type:'bandpass',f:900,q:.4,a:d*.5});ruis(t,d*.5,v*.2,{type:'bandpass',f:2500,q:.6,a:d*.5})},
+    // spookachtige zingende toon met trilling
+    zing:(t,f,d,v)=>{const s=T()+t,o=C.createOscillator(),g=C.createGain(),l=C.createOscillator(),lg=C.createGain();o.type='sine';o.frequency.setValueAtTime(f,s);o.frequency.exponentialRampToValueAtTime(f*1.5,s+d);
+      l.frequency.value=6;lg.gain.value=f*.03;l.connect(lg).connect(o.frequency);o.connect(g).connect(mix);env(g,s,d*.4,v*.18,d*.6);o.start(s);l.start(s);o.stop(s+d+.1);l.stop(s+d+.1)},
+    // krakende deur: steeds langzamer wordende klikjes
+    kraak:(t,v)=>{let x=0;for(let i=0;i<16;i++){ruis(t+x,.02,v*.4,{type:'bandpass',f:400+Math.random()*300,q:6});x+=.02+i*.006}}
   };
   // zoemend tapijt onder het aftellen: wordt per getal hoger, helderder en gaat trillen
   const maakBed=k0=>{if(!P.bed)return null;const s=T(),g=C.createGain(),fl=C.createBiquadFilter(),tr=C.createGain(),lfo=C.createOscillator(),ld=C.createGain();
@@ -121,11 +148,12 @@ function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||windo
   const vul=(d,iv,fn,start=0)=>{let i=0;for(let x=start;x<d-.05;x+=iv)fn(x,i++)};
   const roffel=d=>{const r=P.roffel;let x=0;
     while(x<d){const k=x/d,a=.2+.8*k*k;
-      if(r==='pauk')I.pauk(x,P.f,a*.8);else if(r==='chip')I.noot(x,P.f*2*st(Math.floor(k*24)),.05,a);else if(r!=='riser')I.snare(x,a);
+      if(r==='pauk')I.pauk(x,P.f,a*.8);else if(r==='taiko')I.taiko(x,a);else if(r==='piep')I.piep(x,2000,.04,a*1.2);else if(r==='chip')I.noot(x,P.f*2*st(Math.floor(k*24)),.05,a);else if(r!=='riser')I.snare(x,a);
       x+=r==='chip'?.06:Math.max(.035,.11-.075*k)}
     if(r==='riser'){I.riser(0,d,1);ruis(0,.2,.6,{f:100,f2:900,a:d,gl:d})}};
   const fan=F=>{const f=F.f,ty=F.type,ch=!!F.chip;
     F.noten.forEach(([n,t,d])=>{if(ch)I.noot(t,f*st(n),d,1.2);else{[-9,9].forEach(dt=>toon(f*st(n),t,d+.1,ty,.055,{det:dt,lp:4500}));toon(f*st(n)/2,t,d+.1,'triangle',.1)}});
+    if(F.drop)for(let i=0;i<16;i++){const x=F.t+i*.42;I.kick(x,1);I.bas(x+.21,f/2,1.6);I.hihat(x+.21,1);if(i%2)I.klap(x,.6)}
     if(F.oempa)for(let i=0;i<8;i++){const x=i*.225;if(i%2)I.snare(x,.5);else I.bas(x,f/2*(i%4?1.5:1),1.4)}
     const t=F.t;
     if(ch){for(let i=0;i<32;i++)I.noot(t+i*.06,f*st(F.akk[i%F.akk.length])*(i%8<4?1:2),.06,1);I.chip(t,f/2,1.4)}
@@ -141,9 +169,20 @@ function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||windo
       const H={braam:()=>{I.braam(0,f,.7+.5*k);I.kick(0,.9)},pauk:()=>{I.pauk(0,f,1);I.bekken(0,.12+.3*k)},
         trom:()=>{I.trom(0,1);I.bekken(0,.25);I.stab(0,f*4,.5)},raket:()=>{I.boem(0,.45+.5*k);I.bliep(0,660*st(10-n),1)},
         stab:()=>{I.kick(0,1);I.stab(0,f*4,1)},klap:()=>{I.kick(0,1);I.klap(0,1);I.stab(0,f*4,.5)},
-        donder:()=>I.donder(0,.55+.45*k),chip:()=>{I.chip(0,f,1);I.noot(0,f*2,.1,1)},knal:()=>{I.knal(0,.6+.4*k);if(n>1)I.fluit(d-.9,.8)}};
+        donder:()=>I.donder(0,.55+.45*k),chip:()=>{I.chip(0,f,1);I.noot(0,f*2,.1,1)},knal:()=>{I.knal(0,.6+.4*k);if(n>1)I.fluit(d-.9,.8)},
+        // de geluiden A t/m J
+        trailer:()=>{I.braam(0,f,1.1);I.boem(0,.9);I.riser(.15,d-.3,.35)},
+        bel:()=>{I.bel(0,f*4,1);I.boem(0,.4)},
+        hart:()=>I.hart(0,1.4),
+        bom:()=>{I.piep(0,2000,.1,1.3);I.kick(0,.5)},
+        taiko:()=>{I.taiko(0,1.2);I.taiko(.12,.7)},
+        sirene:()=>{const a=420+320*k;I.sirene(0,d/2,1,a,a*1.8);I.sirene(d/2,d/2,1,a*1.8,a);I.kick(0,.8)},
+        spook:()=>{I.zing(0,280*st(10-n),d,1);I.boem(0,.5);if(n%3===1)I.kraak(.2,1)},
+        drop:()=>{I.kick(0,1);I.riser(0,d,.3)},
+        pizz:()=>{I.pizz(0,f*2,1.5);I.kick(0,.6)},
+        stadion:()=>{I.trom(0,1);I.publiek(0,d,.3+.7*k)}};
       (H[P.hit]||niks)();
-      if(laat){if(P.hit==='chip')I.chip(.02,f/2,1.4);else{I.boem(0,1);I.gil(.05,f*4,.6+.3*(3-n))}}
+      if(laat){if(P.hit==='chip')I.chip(.02,f/2,1.4);else{I.boem(0,1);if(P.gil!==false)I.gil(.05,f*4,.6+.3*(3-n))}}
       // tussen de klappen door: hartslag, beat of klok, steeds sneller
       const b=P.beat;
       if(b==='hart')vul(d,(.9-.5*k)/(P.hart||1),x=>I.hart(x,.7+.5*k));
@@ -152,7 +191,13 @@ function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||windo
       if(b==='mars'){const s=.46-.18*k;vul(d,s,(x,i)=>{I.bas(x,f*(i%2?1.5:1),1.2);I.snare(x+s/2,.45)})}
       if(b==='sonar'){vul(d,1,x=>I.bliep(x+.5,1320,.6));ruis(0,d,.15+.45*k,{f:120+k*500,a:.1})}
       if(b==='chip')vul(d,.125-.05*k,(x,i)=>I.noot(x,f*2*st([0,3,7,12][i%4]),.06,.8));
-      if(P.klok)vul(d,P.klokSnel?.25:.5,(x,i)=>I.tik(x,1,i%2===0))},
+      if(b==='adem'){vul(d,(.9-.45*k),x=>I.hart(x,.8+.5*k));if(n%2===0)I.adem(0,d,1,true);else I.adem(0,d,1,false)}
+      if(b==='bom')vul(d,.5-.4*k,x=>I.piep(x,2000,.05,1),.25);
+      if(b==='taiko'){const s=.5-.2*k;vul(d,s,(x,i)=>{I.taiko(x,i%4===0?1:.55);if(k>.4)I.taiko(x+s/2,.4)})}
+      if(b==='build'){const s=n>6?.5:n>3?.25:.125;vul(d,s,x=>I.snare(x,.3+.6*k))}
+      if(b==='pizz'){const s=.25-.1*k;vul(d,s,(x,i)=>I.pizz(x,f*2*st([0,7,3,7][i%4]),.8+.4*k))}
+      if(b==='klap'){vul(d,.9-.65*k,x=>{for(let j=0;j<6;j++)I.klap(x+Math.random()*.04,.25)})}
+      if(P.klok)vul(d,P.klokSnel?.25:.5,(x,i)=>I.tik(x,P.grootKlok?2:1,i%2===0))},
     // na de 1: alles valt weg, je hoort alleen nog je hart
     na:()=>{if(bed){bed.stop(.08);bed=null}if(P.hit!=='chip'){I.hart(.5,1.1);I.hart(1.3,1.1)}},
     roffel,
@@ -162,7 +207,8 @@ function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||windo
     spanning:d=>{bed=maakBed(.9);if(bed)bed.stijg(d);roffel(d);I.riser(0,d,1)},
     // doodstil (d seconden), daarna komt het geluid in één klap terug
     stilte:d=>{if(bed){bed.stop(.03);bed=null}const s=T(),g=hoofd.gain;g.cancelScheduledValues(s);g.setValueAtTime(1,s);g.linearRampToValueAtTime(.0001,s+.04);g.setValueAtTime(.0001,s+d);g.linearRampToValueAtTime(1,s+d+.02)},
-    winnaar:()=>{I.boem(0,1.1);I.kick(0,1);I.bekken(0,1);if(P.hit==='donder')I.donder(0,1);if(P.hit==='knal')I.knal(0,1);fan(FAN[P.fan]||FAN.feest)},
+    winnaar:()=>{I.boem(0,1.1);I.kick(0,1);I.bekken(0,1);if(P.hit==='donder')I.donder(0,1);if(P.hit==='knal'||P.einde==='explosie')I.knal(0,1.2);
+      if(P.juich)I.publiek(0,7,2.2);if(P.hit==='bel')[0,.6,1.2,1.8].forEach((x,i)=>I.bel(x,P.f*4*st([12,7,4,0][i]),.8));fan(FAN[P.fan]||FAN.feest)},
     vuur:()=>{if(P.hit==='knal'){I.fluit(0,.6);I.knal(.8,.5)}},
     stil:()=>{try{C.close()}catch(e){}}}}
   catch(e){return{start:niks,tel:niks,na:niks,roffel:niks,onthul:niks,spanning:niks,stilte:niks,winnaar:niks,vuur:niks,stil:niks}}}
@@ -191,13 +237,14 @@ function confetti(cv,kleuren,vorm){const ctx=cv.getContext('2d'),d=window.device
     ctx.globalAlpha=1;id=requestAnimationFrame(stap)};stap();
   return{kanon,knal,regen:v=>{regen=v},buien:v=>{buien=v},stop:()=>{cancelAnimationFrame(id);removeEventListener('resize',fit)}}}
 // demo = voorproefje met voorbeeldteams: de echte uitslag blijft dicht
-async function toonWinnaar(id){if(SH)return;const L=DEMO,demo=true;
+// id = welke show (kleuren), gid = welk geluid (A t/m J); zonder gid klinkt het eigen geluid van de show
+async function toonWinnaar(id,gid){if(SH)return;const L=DEMO,demo=true;
   const c=cfg(),X=showOf(id),zin=X.zin||ZIN,nm=x=>esc(x.naam||'Team '+x.nr),kop=`<div class="sh-kop">${esc(c.naam||'Genneps Gewiekste')}${c.editie?' · '+esc(c.editie):''}</div>`;
   const win=L.filter(x=>x.place===1),rest=win.length>1?[]:L.slice(1,3).reverse(); // eerst plaats 3, dan 2
   const el=document.createElement('div');el.id='show';el.className='show t-'+X.id;el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','De winnaar bekendmaken');
   el.innerHTML=`<div class="sh-licht" aria-hidden="true"></div><div class="sh-deco" aria-hidden="true"></div><div class="sh-vig" aria-hidden="true"></div><canvas class="sh-conf" aria-hidden="true"></canvas>${demo?'<div class="sh-demo">Voorproefje met voorbeeldteams</div>':''}<button class="sh-x" aria-label="Show stoppen">✕</button><div class="sh-stage" aria-live="assertive"></div>`;
   document.body.appendChild(el);document.body.classList.add('show-open');SH=el;
-  const G=geluid(X.s),K=confetti(el.querySelector('canvas'),X.kl,X.deel),st=el.querySelector('.sh-stage'),vig=el.querySelector('.sh-vig');
+  const GL=GELUIDEN.find(g=>g.id===gid),G=geluid(GL?GL.s:X.s),K=confetti(el.querySelector('canvas'),X.kl,X.deel),st=el.querySelector('.sh-stage'),vig=el.querySelector('.sh-vig');
   let stop=false,iv=0;
   const toets=e=>{if(e.key==='Escape')sluit()};
   const sluit=()=>{stop=true;clearInterval(iv);G.stil();K.stop();el.remove();document.body.classList.remove('show-open');removeEventListener('keydown',toets);SH=null};
@@ -238,7 +285,11 @@ async function toonWinnaar(id){if(SH)return;const L=DEMO,demo=true;
 document.getElementById('lijst').innerHTML=SHOWS.map((x,i)=>`<article class="vb-kaart"><div class="vb-voorbeeld show t-${x.id}" aria-hidden="true"><div class="sh-licht"></div><div class="sh-deco"></div><span>${i+1}</span></div>
   <div class="vb-tekst"><h2><span class="vb-nr">${i+1}.</span> ${esc(x.naam)}</h2><p>${esc(x.uitleg)}</p></div>
   <button class="btn primary big" data-show="${x.id}">▶ Bekijk show ${i+1}</button></article>`).join('');
-document.getElementById('lijst').addEventListener('click',e=>{const b=e.target.closest('[data-show]');if(!b)return;
+document.getElementById('geluiden').innerHTML=GELUIDEN.map(g=>`<article class="vb-kaart"><div class="vb-tekst"><h2><span class="vb-nr">Geluid ${g.id}.</span> ${esc(g.naam)}</h2><p>${esc(g.uitleg)}</p></div>
+  <button class="btn primary big" data-geluid="${g.id}">▶ Luister naar geluid ${g.id}</button></article>`).join('');
+document.getElementById('geluidsel').innerHTML='<option value="">Eigen geluid van elke show</option>'+GELUIDEN.map(g=>`<option value="${g.id}">Geluid ${g.id} · ${esc(g.naam)}</option>`).join('');
+// shows: met het gekozen geluid uit het menu; geluiden: met de kleuren van show 1 (Klassiek)
+document.querySelector('.vb').addEventListener('click',e=>{const b=e.target.closest('[data-show],[data-geluid]');if(!b)return;
   const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().catch(()=>{});
-  toonWinnaar(b.dataset.show)});
+  if(b.dataset.geluid)toonWinnaar('klassiek',b.dataset.geluid);else toonWinnaar(b.dataset.show,document.getElementById('geluidsel').value)});
 })();

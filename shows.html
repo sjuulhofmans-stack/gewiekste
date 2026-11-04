@@ -16,8 +16,13 @@
 <!-- Voorbeeldpagina: tien varianten van de winnaar-show om uit te kiezen. Hoort (nog) niet bij de app. -->
 <main class="vb">
   <div class="vb-kop"><img class="owl" src="img/uil.png" alt="Logo Genneps Gewiekste"><h1>Kies de winnaar-show</h1></div>
-  <p class="vb-intro">Hier staan tien varianten van de show die de winnaar bekendmaakt. Druk op een knop om een show te bekijken, met geluid aan. Ze spelen met verzonnen teams. Stoppen kan met het kruisje rechtsboven of de Esc-toets. Laat daarna weten welk nummer je wilt.</p>
+  <p class="vb-intro">Hier staan tien varianten van de show die de winnaar bekendmaakt (1 t/m 10) en tien geluiden (A t/m J). Zet je geluid aan. Alles speelt met verzonnen teams. Stoppen kan met het kruisje rechtsboven of de Esc-toets. Laat daarna weten welke show en welk geluid je wilt, bijvoorbeeld "show 3 met geluid D".</p>
+  <h2 class="vb-sectie">Shows 1 t/m 10</h2>
+  <div class="vb-keuze"><label class="rubsel"><span>Geluid bij de shows</span><select class="inp" id="geluidsel"></select></label></div>
   <div id="lijst"></div>
+  <h2 class="vb-sectie">Geluiden A t/m J</h2>
+  <p class="vb-intro">Elk geluid speelt met de kleuren van show 1. Je kunt een geluid ook bij een andere show horen: kies het hierboven bij "Geluid bij de shows".</p>
+  <div id="geluiden"></div>
 </main>
 <script src="js/shows-voorbeeld.js"></script>
 </body>
