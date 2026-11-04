@@ -1,0 +1,120 @@
+/* VOORBEELDPAGINA WINNAAR-SHOWS (shows.html): kleuren en opmaak van de tien shows, bovenop css/style.css */
+:root{
+  --sh-goud:#F5C542; --sh-goud-2:#B07D12; --sh-wit:#FFFFFF; --sh-zwart:#05060B; --sh-rood:#E3262F; --sh-bloed:#4A0508;
+  --sh-geel:#FFD21A; --sh-groen:#1E9E48; --sh-blauw:#3D8BFF; --sh-cyaan:#5CF0FF; --sh-paars:#8C4BFF; --sh-roze:#FF3DB4;
+  --sh-oranje:#FF7A1A; --sh-pixel:#3BFF5C; --sh-ruimte:#02040F; --sh-storm:#1B2431; --sh-studio:#160B3D;
+}
+.show{position:fixed;inset:0;z-index:100;--sh-a:var(--accent);--sh-b:var(--bad);--sh-bg:var(--night);background:var(--sh-bg);color:var(--night-ink);display:grid;place-items:center;overflow:hidden;animation:sh-in .6s ease both}
+.sh-licht{position:absolute;inset:-50%;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--sh-a) 22%,transparent) 0deg 8deg,transparent 8deg 30deg);opacity:.55;animation:sh-draai 20s linear infinite;-webkit-mask-image:radial-gradient(circle,var(--ink) 0 25%,transparent 62%);mask-image:radial-gradient(circle,var(--ink) 0 25%,transparent 62%);transition:opacity .6s}
+.show.spannend .sh-licht{animation-duration:3s;opacity:.9;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--sh-b) 30%,transparent) 0deg 8deg,transparent 8deg 30deg)}
+.show[data-fase="winnaar"] .sh-licht{animation-duration:7s;opacity:1;background:repeating-conic-gradient(from 0deg,color-mix(in srgb,var(--sh-a) 38%,transparent) 0deg 10deg,transparent 10deg 24deg)}
+.sh-conf{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2}
+.sh-x{position:absolute;top:16px;right:16px;z-index:3;width:52px;height:52px;border-radius:50%;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent);background:transparent;color:var(--night-ink);font-size:1.3rem;cursor:pointer;opacity:.6}
+.sh-x:hover{opacity:1}
+.sh-stage{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center;padding:24px;max-width:100%}
+.show.spannend .sh-stage{animation:sh-schud .12s linear infinite}
+.sh-kop{font-family:var(--font-display);font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--sh-a);font-size:clamp(1rem,2.4vw,1.6rem)}
+.sh-titel{font-family:var(--font-display);font-weight:800;font-size:clamp(2.2rem,7vw,5.5rem);line-height:1.05;text-wrap:balance;max-width:16ch;animation:sh-op .8s cubic-bezier(.2,.9,.3,1.3) both}
+.sh-ring{position:relative;width:min(64vmin,440px);aspect-ratio:1;display:grid;place-items:center}
+.sh-ring svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
+.sh-rb{fill:none;stroke:color-mix(in srgb,var(--night-ink) 14%,transparent);stroke-width:10}
+.sh-rv{fill:none;stroke:var(--sh-a);stroke-width:10;stroke-linecap:round;stroke-dasharray:565.5;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke .3s;filter:drop-shadow(0 0 12px var(--sh-a))}
+.show.spannend .sh-rv{stroke:var(--sh-b);filter:drop-shadow(0 0 18px var(--sh-b))}
+.sh-num{font-family:var(--font-display);font-weight:800;font-size:min(34vmin,240px);line-height:1;font-variant-numeric:tabular-nums;text-shadow:0 0 40px color-mix(in srgb,var(--sh-a) 70%,transparent)}
+.sh-num.pop{animation:sh-pop .9s cubic-bezier(.2,.9,.3,1.4) both}
+.show.spannend .sh-num{color:var(--sh-b);text-shadow:0 0 50px var(--sh-b)}
+.sh-sub{font-size:clamp(1.2rem,3vw,2rem);font-weight:700;opacity:.85;min-height:1.5em}
+.sh-plaats{font-family:var(--font-display);font-weight:800;font-size:clamp(1.6rem,4.5vw,3.2rem);color:var(--sh-a);animation:sh-op .6s both}
+.sh-naam{font-family:var(--font-display);font-weight:800;font-size:clamp(2.4rem,8vw,6.5rem);line-height:1.05;text-wrap:balance;overflow-wrap:anywhere;animation:sh-knal .9s cubic-bezier(.2,.9,.3,1.4) both}
+.sh-naam.groot{font-size:clamp(3rem,11vw,9rem);background:linear-gradient(100deg,var(--sh-a) 20%,var(--night-ink) 45%,var(--sh-a) 70%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:sh-knal 1s cubic-bezier(.2,.9,.3,1.4) both,sh-glans 2.5s linear 1s infinite}
+.sh-pnt{font-size:clamp(1.3rem,3.4vw,2.4rem);font-weight:700;animation:sh-op .6s .5s both}
+.show .owl{width:clamp(90px,16vmin,160px);height:auto;animation:sh-huppel .9s ease-in-out infinite alternate}
+.sh-flits{position:fixed;inset:0;background:var(--night-ink);pointer-events:none;animation:sh-flits 1s ease-out forwards}
+.sh-door{animation:sh-op .6s 2.5s both}
+/* de tien shows: .show.t-<naam> zet de kleuren (--sh-a hoofdkleur, --sh-b laatste seconden, --sh-bg achtergrond) en een eigen decor (.sh-deco) */
+.sh-deco{position:absolute;inset:0;pointer-events:none;z-index:0;transition:opacity .15s}
+.sh-vig{position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0;background:radial-gradient(ellipse at 50% 50%,transparent 35%,color-mix(in srgb,var(--sh-b) 55%,transparent) 100%)}
+.sh-vig.aan{animation:sh-vig .8s ease-out}
+.show.zwart .sh-stage,.show.zwart .sh-licht,.show.zwart .sh-deco{opacity:0;transition:opacity .12s}
+.sh-demo{position:absolute;top:22px;left:22px;z-index:3;font-weight:700;padding:6px 14px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 40%,transparent);opacity:.8}
+.sh-bliksem{position:absolute;inset:0;z-index:1;pointer-events:none;background:var(--sh-wit);animation:sh-bliksem .7s ease-out forwards}
+@keyframes sh-vig{0%{opacity:1}100%{opacity:0}}
+@keyframes sh-bliksem{0%{opacity:.95}8%{opacity:.1}16%{opacity:.75}30%{opacity:.05}100%{opacity:0}}
+/* gala: zwart en goud met glinsters */
+.show.t-gala{--sh-a:var(--sh-goud);--sh-b:var(--sh-goud);--sh-bg:radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--sh-goud) 16%,var(--sh-zwart)),var(--sh-zwart) 72%)}
+.t-gala .sh-deco{background:radial-gradient(circle,var(--sh-goud) 0 1.5px,transparent 2.5px) 0 0/86px 86px,radial-gradient(circle,var(--sh-wit) 0 1px,transparent 2px) 40px 30px/64px 64px;animation:sh-twinkel 1.6s ease-in-out infinite alternate}
+.show.t-gala .sh-num,.show.t-gala.spannend .sh-num{background:linear-gradient(180deg,var(--sh-wit) 10%,var(--sh-goud) 50%,var(--sh-goud-2) 90%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 26px color-mix(in srgb,var(--sh-goud) 60%,transparent))}
+@keyframes sh-twinkel{from{opacity:.15}to{opacity:.55}}
+/* thriller: bloedrood, de randen kloppen mee met het hart */
+.show.t-thriller{--sh-a:var(--sh-rood);--sh-b:var(--sh-rood);--sh-bg:radial-gradient(circle at 50% 50%,var(--sh-bloed),var(--sh-zwart) 72%)}
+.t-thriller .sh-licht{opacity:.18}
+.t-thriller .sh-deco{background:radial-gradient(ellipse at 50% 50%,transparent 30%,color-mix(in srgb,var(--sh-rood) 45%,transparent) 100%);animation:sh-hart .95s ease-in-out infinite}
+.t-thriller.spannend .sh-deco{animation-duration:.5s}
+.show.t-thriller .sh-num,.show.t-thriller.spannend .sh-num{color:var(--sh-wit);text-shadow:0 0 24px var(--sh-rood),0 0 90px var(--sh-rood)}
+.show.t-thriller.spannend .sh-stage{animation:sh-schud .08s linear infinite}
+@keyframes sh-hart{0%,100%{opacity:.25}12%{opacity:1}28%{opacity:.35}42%{opacity:.85}60%{opacity:.25}}
+/* carnaval: rood-geel-groen, stuiterende getallen */
+.show.t-carnaval{--sh-a:var(--sh-geel);--sh-b:var(--sh-rood);--sh-bg:radial-gradient(circle,color-mix(in srgb,var(--sh-groen) 30%,var(--sh-zwart)),var(--sh-zwart) 80%)}
+.show.t-carnaval .sh-licht{background:repeating-conic-gradient(var(--sh-rood) 0 10deg,var(--sh-geel) 10deg 20deg,var(--sh-groen) 20deg 30deg);opacity:.22}
+.show.t-carnaval.spannend .sh-licht{opacity:.55;animation-duration:3s}
+.show.t-carnaval .sh-num,.show.t-carnaval.spannend .sh-num{color:var(--sh-geel);text-shadow:7px 7px 0 var(--sh-rood),14px 14px 0 var(--sh-groen)}
+.t-carnaval .sh-num.pop{animation:sh-stuiter .8s cubic-bezier(.3,1.7,.5,1) both}
+@keyframes sh-stuiter{0%{transform:translateY(-60vh) rotate(-12deg)}100%{transform:none}}
+/* lancering: sterren die steeds harder voorbij schieten */
+.show.t-ruimte{--sh-a:var(--sh-cyaan);--sh-b:var(--sh-oranje);--sh-bg:radial-gradient(ellipse at 50% 115%,color-mix(in srgb,var(--sh-blauw) 35%,var(--sh-ruimte)),var(--sh-ruimte) 62%)}
+.show.t-ruimte .sh-licht{opacity:0}
+.t-ruimte .sh-deco{background:radial-gradient(circle,var(--sh-wit) 0 1px,transparent 1.6px) 0 0/57px 57px,radial-gradient(circle,var(--sh-wit) 0 1.6px,transparent 2.4px) 23px 31px/131px 131px,radial-gradient(circle,var(--sh-cyaan) 0 1px,transparent 1.8px) 71px 9px/97px 97px;animation:sh-sterren 8s linear infinite;opacity:.8}
+.t-ruimte.spannend .sh-deco{animation-duration:.9s}
+.show.t-ruimte.spannend .sh-stage{animation:sh-schud .05s linear infinite}
+@keyframes sh-sterren{to{background-position:0 570px,23px 1341px,71px 979px}}
+/* tv-studio: twee zwaaiende schijnwerpers */
+.show.t-studio{--sh-a:var(--sh-cyaan);--sh-b:var(--sh-roze);--sh-bg:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--sh-paars) 45%,var(--sh-studio)),var(--sh-studio) 75%)}
+.t-studio .sh-licht{opacity:.25}
+.t-studio .sh-deco::before,.t-studio .sh-deco::after{content:"";position:absolute;bottom:-8vh;left:12%;width:28vw;height:130vh;transform-origin:50% 100%;background:linear-gradient(to top,color-mix(in srgb,var(--sh-cyaan) 60%,transparent),transparent 80%);clip-path:polygon(45% 100%,55% 100%,100% 0,0 0);mix-blend-mode:screen;filter:blur(14px);animation:sh-zwaai 2.6s ease-in-out infinite alternate}
+.t-studio .sh-deco::after{left:auto;right:12%;background:linear-gradient(to top,color-mix(in srgb,var(--sh-roze) 60%,transparent),transparent 80%);animation-direction:alternate-reverse}
+.t-studio.spannend .sh-deco::before,.t-studio.spannend .sh-deco::after{animation-duration:.6s}
+@keyframes sh-zwaai{from{transform:rotate(-28deg)}to{transform:rotate(28deg)}}
+/* disco: discobal, gekleurde lichtvlekken en flitsen */
+.show.t-disco{--sh-a:var(--sh-roze);--sh-b:var(--sh-cyaan);--sh-bg:var(--sh-zwart)}
+.show.t-disco .sh-licht{background:repeating-conic-gradient(color-mix(in srgb,var(--sh-roze) 45%,transparent) 0 8deg,transparent 8deg 20deg,color-mix(in srgb,var(--sh-cyaan) 45%,transparent) 20deg 28deg,transparent 28deg 40deg,color-mix(in srgb,var(--sh-geel) 45%,transparent) 40deg 48deg,transparent 48deg 60deg);opacity:.8;animation:sh-draai 7s linear infinite}
+.show.t-disco.spannend .sh-licht{animation:sh-draai 1.6s linear infinite,sh-flikker .24s steps(2) infinite}
+.t-disco .sh-deco::before{content:"";position:absolute;top:-7vmin;left:50%;width:24vmin;height:24vmin;margin-left:-12vmin;border-radius:50%;background:repeating-conic-gradient(color-mix(in srgb,var(--sh-wit) 90%,transparent) 0 25%,color-mix(in srgb,var(--sh-wit) 30%,transparent) 0 50%) 0 0/2.4vmin 2.4vmin;box-shadow:0 0 70px color-mix(in srgb,var(--sh-wit) 55%,transparent);animation:sh-bal 3s linear infinite}
+.t-disco .sh-deco::after{content:"";position:absolute;inset:0;background:radial-gradient(circle,color-mix(in srgb,var(--sh-roze) 75%,transparent) 0 4px,transparent 5px) 0 0/130px 95px,radial-gradient(circle,color-mix(in srgb,var(--sh-cyaan) 75%,transparent) 0 3px,transparent 4px) 65px 40px/160px 120px;animation:sh-stippen 5s linear infinite}
+.show.t-disco .sh-num,.show.t-disco.spannend .sh-num{color:var(--sh-wit);text-shadow:-6px 0 0 var(--sh-roze),6px 0 0 var(--sh-cyaan)}
+@keyframes sh-bal{to{background-position:24vmin 0}}
+@keyframes sh-stippen{to{background-position:1300px 0,-1600px 0}}
+@keyframes sh-flikker{50%{opacity:.25}}
+/* onweer: donkere lucht; regen en bliksem komen uit app.js */
+.show.t-onweer{--sh-a:var(--sh-cyaan);--sh-b:var(--sh-geel);--sh-bg:linear-gradient(var(--sh-storm),var(--sh-zwart))}
+.t-onweer .sh-licht{opacity:.15}
+/* arcade: pixels, beeldlijnen en schokkerige bewegingen */
+.show.t-arcade{--sh-a:var(--sh-pixel);--sh-b:var(--sh-roze);--sh-bg:var(--sh-zwart);font-family:"Consolas","Courier New",monospace}
+.show.t-arcade .sh-licht{inset:0;-webkit-mask-image:none;mask-image:none;opacity:.5;background:linear-gradient(90deg,color-mix(in srgb,var(--sh-pixel) 14%,transparent) 2px,transparent 2px) 0 0/48px 48px,linear-gradient(0deg,color-mix(in srgb,var(--sh-pixel) 14%,transparent) 2px,transparent 2px) 0 0/48px 48px;animation:sh-raster 1.2s linear infinite}
+.show.t-arcade.spannend .sh-licht{animation-duration:.3s}
+.t-arcade .sh-deco{z-index:2;background:repeating-linear-gradient(0deg,color-mix(in srgb,var(--sh-zwart) 45%,transparent) 0 2px,transparent 2px 4px)}
+.t-arcade .sh-num,.t-arcade .sh-titel,.t-arcade .sh-naam,.t-arcade .sh-kop,.t-arcade .sh-plaats{font-family:inherit;letter-spacing:0}
+.show.t-arcade .sh-num{color:var(--sh-pixel);text-shadow:8px 8px 0 var(--sh-roze)}
+.show.t-arcade.spannend .sh-num{color:var(--sh-geel);text-shadow:8px 8px 0 var(--sh-roze)}
+.t-arcade .sh-num.pop{animation:sh-pop .5s steps(5) both}
+.t-arcade .sh-rv{stroke-linecap:butt}
+.show.t-arcade .sh-naam.groot{background:none;color:var(--sh-pixel);text-shadow:6px 6px 0 var(--sh-roze);animation:sh-knal .6s steps(6) both,sh-knipper .5s steps(2) 1s infinite}
+@keyframes sh-raster{to{background-position:0 48px,0 48px}}
+@keyframes sh-knipper{50%{opacity:.35}}
+/* vuurwerk: sterrenhemel, het vuurwerk zelf komt uit app.js */
+.show.t-vuurwerk{--sh-a:var(--sh-goud);--sh-b:var(--sh-rood);--sh-bg:linear-gradient(var(--sh-ruimte) 40%,color-mix(in srgb,var(--sh-paars) 28%,var(--sh-ruimte)))}
+.t-vuurwerk .sh-licht{opacity:.15}
+.t-vuurwerk .sh-deco{background:radial-gradient(circle,var(--sh-wit) 0 1px,transparent 1.6px) 0 0/73px 73px,radial-gradient(circle,var(--sh-wit) 0 1px,transparent 1.6px) 31px 47px/119px 119px;opacity:.45}
+/* opmaak van de voorbeeldpagina zelf: een kaartje per show met een klein voorbeeld van de kleuren */
+.vb{max-width:1160px;margin:0 auto;padding:24px}
+.vb-kop{display:flex;align-items:center;gap:16px;margin-bottom:10px}
+.vb-kop .owl{width:72px;height:72px}
+.vb-kop h1{font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800}
+.vb-intro{font-size:1.15rem;color:var(--ink-2);margin:0 0 22px;max-width:760px}
+#lijst{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px}
+.vb-kaart{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.vb-voorbeeld.show{position:relative;inset:auto;z-index:auto;height:170px;border-radius:10px;animation:none}
+.vb-voorbeeld span{position:relative;z-index:1;font-family:var(--font-display);font-weight:800;font-size:5rem;line-height:1;color:var(--sh-a);text-shadow:0 0 30px color-mix(in srgb,var(--sh-a) 60%,transparent)}
+.vb-tekst h2{font-size:1.35rem;font-weight:800}
+.vb-tekst p{margin:4px 0 0;color:var(--ink-2)}
+.vb-nr{color:var(--accent)}
+.vb-kaart .btn{margin-top:auto}
