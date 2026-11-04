@@ -44,7 +44,7 @@ function nakijkenAan(){return cfg().nakijken===true}
 function mijnTabs(){return S.isOwner?TABS:TABS.filter(t=>t[0]==='vragen'||(t[0]==='nakijken'&&nakijkenAan()))}
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
-  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],dbOk:null,loadSlow:false,
+  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],online:[],dbOk:null,loadSlow:false,
   tab:'vragen',rid:null,vq:1,mode:'raster',team:null,confirm:null,pf:null};
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
@@ -195,7 +195,7 @@ function header(){const c=cfg();
   const role=S.backend==='lokaal'?'Lokaal testen':S.isOwner?'Beheerder':(S.dbOk&&S.canWrite?'Bestuurslid':'Alleen lezen');
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
-  <div class="head-r"><div class="top-right"><span class="role">${role}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
+  <div class="head-r"><div class="top-right">${onlineTxt()}<span class="role">${role}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
   ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':mijnTabs().map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
 // vaste meldingen als [sleutel, soort, tekst]; getoond als kaartje rechtsonder
 function notices(){const h=[];
@@ -627,6 +627,24 @@ function subscribe(){if(subscribed)return;subscribed=true;
   volgScores();
   setTimeout(()=>{if(!S.fresh&&!S.noAccess){S.loadSlow=true;schedule()}},10000);
 }
+/* ---------- wie is er nog meer online ---------- */
+// elk geopend venster meldt zich elke minuut in online/<id>; wie 2,5 minuut niets liet horen, telt niet meer mee
+const ONL_ID=(()=>{const n=()=>Math.random().toString(36).slice(2,10);try{let x=sessionStorage.getItem('gg_onl');if(!x){x=n();sessionStorage.setItem('gg_onl',x)}return x}catch(e){return n()}})();
+let onlDocs=[],onlNaam='';
+function onlineTxt(){const L=S.online;if(!L.length)return'';
+  return `<span class="online" data-tip="Ook online: ${esc(L.join(', '))}"><span class="odot" aria-hidden="true"></span>${L.length===1?esc(L[0])+' is ook online':L.length+' anderen online'}</span>`}
+function startOnline(naam){onlNaam=naam;const p='online/'+ONL_ID;const meld=()=>db.doc(p).set({naam,tijd:Date.now()}).catch(()=>{});
+  meld();setInterval(meld,60000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')meld()});
+  window.addEventListener('pagehide',()=>{db.doc(p).delete().catch(()=>{})});
+  db.collection('online').onSnapshot(qs=>{onlDocs=qs.docs.map(d=>({id:d.id,...d.data()}));wieOnline()},()=>{});
+  setInterval(wieOnline,20000)}
+function wieOnline(){const nu=Date.now();
+  // oude meldingen van vensters die zonder afmelden zijn gesloten opruimen
+  for(const d of onlDocs)if(d.id!==ONL_ID&&nu-d.tijd>3600000)db.doc('online/'+d.id).delete().catch(()=>{});
+  const L=[...new Set(onlDocs.filter(d=>d.id!==ONL_ID&&d.naam!==onlNaam&&Math.abs(nu-d.tijd)<150000).map(d=>String(d.naam||'Iemand')))].sort((a,b)=>a.localeCompare(b,'nl'));
+  if(L.join('|')!==S.online.join('|')){S.online=L;schedule()}}
+
 function init(){const O=window.GGOpslag;
   if(O.firebaseIngesteld()){const F=window.GG_FIREBASE;S.backend='firebase';
     firebase.initializeApp(F.config);db=O.firebaseOpslag(firebase.firestore());
@@ -637,7 +655,9 @@ function init(){const O=window.GGOpslag;
       S.needLogin=false;S.email=(u.email||'').toLowerCase();
       S.isOwner=S.email===String(F.beheerder||'').trim().toLowerCase();
       S.isBestuur=S.email===String(F.bestuurAccount||'').trim().toLowerCase();
-      S.dbOk=true;S.canWrite=true;subscribe();render()});
+      S.dbOk=true;S.canWrite=true;subscribe();
+      if(!onlNaam)startOnline(S.isBestuur?(S.naam||'Bestuurslid'):(u.displayName||S.email.split('@')[0]));
+      render()});
     render();return}
   S.backend='lokaal';db=O.lokaleOpslag();db.doc('publiek/bestuur').onSnapshot(s=>{S.namen=(s.exists&&s.data().namen)||[];schedule()});S.dbOk=true;S.isOwner=true;S.canWrite=true;subscribe();render()}
 init();

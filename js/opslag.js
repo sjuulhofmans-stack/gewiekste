@@ -8,7 +8,7 @@
      -> wordt gebruikt zolang Firebase nog niet is ingevuld.
 
   Beide geven precies dezelfde "knoppen" aan app.js:
-    db.doc("map/document")   -> get(), set(data), update(data), onSnapshot(callback)
+    db.doc("map/document")   -> get(), set(data), update(data), delete(), onSnapshot(callback)
     db.collection("map")     -> onSnapshot(callback)
   update() voegt samen (merge): alleen wat je meegeeft wordt veranderd.
 */
@@ -40,6 +40,7 @@ function lokaleOpslag(){
       get:async()=>snap(p),
       set:async d=>{data[p]=kopie(d);bewaar()},
       update:async d=>{data[p]=samenvoegen(data[p]||{},kopie(d));bewaar()},
+      delete:async()=>{delete data[p];bewaar()},
       onSnapshot:cb=>{const f=()=>cb(snap(p));luisteraars.push(f);setTimeout(f,0);return()=>{}}
     }),
     collection:c=>({
@@ -61,6 +62,7 @@ function firebaseOpslag(fs){
       set:d=>ref.set(d),
       // set met merge = alleen de meegegeven velden aanpassen, de rest blijft staan
       update:d=>ref.set(d,{merge:true}),
+      delete:()=>ref.delete(),
       onSnapshot:(cb,fout)=>ref.onSnapshot(s=>cb(omzetten(s)),fout)
     }},
     collection:c=>({

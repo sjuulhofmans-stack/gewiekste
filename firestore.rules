@@ -12,6 +12,7 @@ rules_version = '2';
 //   als de beheerder bij Instellingen "Nakijken voor het bestuur" aanzet.
 // - De namenlijst voor het inlogscherm (publiek/bestuur) mag iedereen lezen.
 // - Wie er heeft ingelogd (aanmeldingen) ziet alleen de beheerder.
+// - Wie er nu online is (online) zien alle bestuursleden.
 // - Iedereen anders mag niets.
 
 service cloud.firestore {
@@ -51,6 +52,13 @@ service cloud.firestore {
     match /aanmeldingen/{id} {
       allow create: if isBestuur() && request.resource.data.keys().hasOnly(['naam', 'tijd']);
       allow read, delete: if isBeheerder();
+    }
+    match /online/{id} {
+      allow read, delete: if isBestuur();
+      allow create, update: if isBestuur()
+        && request.resource.data.keys().hasOnly(['naam', 'tijd'])
+        && request.resource.data.naam is string && request.resource.data.naam.size() < 80
+        && request.resource.data.tijd is number;
     }
     match /vragen/{rubriek} {
       allow read, write: if isBestuur();

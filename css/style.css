@@ -62,6 +62,9 @@ button,select,input,textarea{font:inherit;color:inherit}
 .brand h1{font-size:1.4rem;font-weight:800}
 .brand p{margin:0;font-size:.9rem;opacity:.75}
 .top-right{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* wie er nog meer online is: groen bolletje + namen bij muis erop */
+.online{display:inline-flex;align-items:center;gap:7px;font-size:.9rem;font-weight:700;cursor:default}
+.odot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 30%,transparent)}
 .role{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent)}
 /* tabbladen als losse knoppen; het actieve tabblad is licht gevuld */
 .tabs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
