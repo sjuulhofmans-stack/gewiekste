@@ -172,6 +172,13 @@ col.wsp{width:28px}
 .grid.nk .gi:focus{background:var(--nk-cell)}
 #tip{position:fixed;z-index:60;max-width:320px;background:var(--night);color:var(--night-ink);border:1px solid var(--line-strong);padding:8px 12px;border-radius:8px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3);pointer-events:none}
 .grid.nk th.ct{cursor:default}
+/* grootte van de nakijktabel (knoppen Klein / Middel / Groot); Middel = de standaardmaten hierboven */
+.nk-hint{flex:1 1 320px}
+.grid-wrap.nk-s{--row:30px;--w1:52px;--w2min:220px;--w3:64px;--wt:52px;font-size:.85rem}
+.grid-wrap.nk-s .grid thead th{height:44px}
+.grid-wrap.nk-l{--row:52px;--w1:76px;--w2min:360px;--w3:100px;--wt:86px;font-size:1.2rem}
+.grid-wrap.nk-l .grid thead th{height:66px}
+.grid-wrap.nk-l .grid .tn{font-size:1.3rem}
 .gi{display:block;width:100%;height:calc(var(--row) - 1px);border:0;background:transparent;text-align:center;font-variant-numeric:tabular-nums;padding:0}
 .gi:focus{outline:3px solid var(--accent);outline-offset:-3px;background:var(--surface)}
 

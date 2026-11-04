@@ -49,7 +49,8 @@ const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
 
-try{S.naam=localStorage.getItem('gg_naam')||'';S.chat=localStorage.getItem('gg_chat')==='1';S.rid=localStorage.getItem('gg_rid');S.uj=localStorage.getItem('gg_uj')||'met';}catch(e){}
+try{S.naam=localStorage.getItem('gg_naam')||'';S.chat=localStorage.getItem('gg_chat')==='1';S.rid=localStorage.getItem('gg_rid');S.uj=localStorage.getItem('gg_uj')||'met';S.nkm=localStorage.getItem('gg_nkm');}catch(e){}
+if(!['s','m','l'].includes(S.nkm))S.nkm='m';
 const h0=location.hash.slice(1); if([...TABS,...BTABS].some(t=>t[0]===h0))S.tab=h0;
 
 /* ---------- helpers ---------- */
@@ -241,8 +242,11 @@ const dis=()=>S.canWrite&&S.dbOk?'':' disabled';
 
 /* ---------- Nakijken ---------- */
 function vNakijken(){ensureRid();const r=rub(S.rid);const T=teams();
+  // grootte van de tabel: ieder kiest zelf (onthouden op deze computer)
+  const G=[['s','Klein'],['m','Middel'],['l','Groot']];
   let h=`<div class="toolbar">${rubSelect()}
-  <p class="hint">Typ een getal, of <kbd>g</kbd> = goed (alle punten) en <kbd>f</kbd> = fout (0). Met <kbd>Enter</kbd> ga je naar de volgende regel, met de <kbd>pijltjes</kbd> naar elk vakje.</p></div>`;
+  <p class="hint nk-hint">Typ een getal, of <kbd>g</kbd> = goed (alle punten) en <kbd>f</kbd> = fout (0). Met <kbd>Enter</kbd> ga je naar de volgende regel, met de <kbd>pijltjes</kbd> naar elk vakje.</p>
+  <div class="seg" role="group" aria-label="Grootte van de tabel">${G.map(([k,l])=>`<button data-act="nkm" data-m="${k}" aria-pressed="${S.nkm===k}">${l}</button>`).join('')}</div></div>`;
   if(!T.length)return h+empty('Er zijn nog geen teams','De beheerder maakt de teams aan onder Teams. Daarna verschijnen ze hier.');
   return h+raster(r,T)}
 
@@ -255,7 +259,7 @@ function scoreInput(pre,r,t,v,g,jl,extra){const x=raw(r.id,t.nr,g.id);
 function raster(r,T){const V=vragen(r.id);const isN=r.soort==='normaal';const pc=code(r);
   // smalle blauwe kolom die vast blijft staan, als scheiding tussen de vragen en de teams
   const SP='<td class="stk c4 sp" aria-hidden="true"></td>';
-  let h=`<div class="grid-wrap nk"><table class="grid nk" style="--nt:${T.length}"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
+  let h=`<div class="grid-wrap nk nk-${S.nkm}"><table class="grid nk" style="--nt:${T.length}"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
   <thead><tr><th class="stk c1">#</th><th class="stk c2 tl">Vraag / opdracht</th><th class="stk c3">Punten</th><th class="stk c4 sp" aria-hidden="true"></th>${T.map(t=>`<th class="ct" data-tip="Team ${t.nr} · ${t.naam?esc(t.naam):'nog geen naam'}"><span class="tnm">Team</span><span class="tn">${t.nr}${jokerOf(t.nr)===r.id?' <span class="jk" title="Joker op deze rubriek">★</span>':''}</span></th>`).join('')}</tr></thead><tbody>`;
   V.forEach((v,i)=>{
     h+=`<tr class="rq"><td class="stk c1">${pc}.${i+1}</td><td class="stk c2 tl" title="${esc(v.titel)}">${v.titel?esc(v.titel):'<i>Nog geen titel</i>'}</td><td class="stk c3">${v.punten}</td>${SP}${T.map(t=>`<td>${fmt(vraagScore(r.id,t.nr,v))}</td>`).join('')}</tr>`;
@@ -620,6 +624,7 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='chat'){S.chat=!S.chat;store('gg_chat',S.chat?'1':'0');if(S.chat)volgChat();render();if(S.chat){const c=document.getElementById('chat-in');if(c)c.focus({preventScroll:true})}return}
   if(a==='chat-stuur'){stuurChat();return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
+  if(a==='nkm'){S.nkm=el.dataset.m;store('gg_nkm',S.nkm);render();return}
   // scherm vanzelf groot (mag alleen direct na een klik), daarna de show
   if(a==='winnaar'){const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().catch(()=>{});toonWinnaar();return}
   if(a==='nk-aan'){const c=clone(cfg());c.nakijken=el.dataset.v==='aan';saveConfig(c);toast(c.nakijken?'Nakijken staat aan: het bestuur ziet nu het tabblad Nakijken.':'Nakijken staat uit: het bestuur ziet alleen Vragen & antwoorden.');return}
