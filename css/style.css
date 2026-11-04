@@ -238,7 +238,9 @@ col.wsp{width:28px}
 .grid-wrap.ov{width:fit-content;max-width:100%;margin-inline:auto}
 .grid.ov{table-layout:auto}
 .grid.ov .tl{overflow:visible;text-overflow:clip;min-width:200px}
-.grid.ov .tnm{max-width:72px;margin-inline:auto}
+/* rubriekkolommen even breed; de volledige rubrieknaam loopt door over meerdere regels */
+.grid.ov thead th:not(.stk){width:100px;min-width:100px;max-width:100px;height:auto;padding:6px 4px;white-space:normal;vertical-align:bottom}
+.grid.ov .tnm{font-size:.8rem;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;hyphens:auto;padding:2px 0 0}
 .uitslag .grid-wrap{max-height:none;min-height:0;max-width:100%}
 col.wu{width:360px}
 
