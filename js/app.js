@@ -172,7 +172,8 @@ function fitChat(){const c=$app.querySelector('.chat');if(!c)return;
   const top=c.getBoundingClientRect().top+window.scrollY;c.style.height=Math.max(360,window.innerHeight-top-16)+'px'}
 // uitslag nog dicht: de knop staat midden in het scherm
 function fitGate(){const g=$app.querySelector('.gate');if(!g)return;
-  const top=g.getBoundingClientRect().top+window.scrollY;g.style.minHeight=Math.max(420,window.innerHeight-top-24)+'px'}
+  // precies tot de onderkant van het scherm, zodat de pagina niet kan scrollen
+  const top=g.getBoundingClientRect().top+window.scrollY;g.style.minHeight=Math.max(420,Math.floor(window.innerHeight-top)-1)+'px'}
 window.addEventListener('resize',()=>{fitGrid();fitChat();fitGate()});
 // draaiende blauwe achtergrond met schijnwerpers achter de hele pagina zolang de uitslag dicht is;
 // staat buiten #app zodat de beweging niet bij elke update opnieuw begint

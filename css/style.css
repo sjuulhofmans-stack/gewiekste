@@ -302,6 +302,7 @@ col.wu{width:360px}
 #podium{display:none;position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;background:var(--pd-diep)}
 body.gate-open #podium{display:block}
 body.gate-open #app{position:relative;z-index:1}
+body.gate-open .main{padding-bottom:0} /* knop-scherm past precies, niets om te scrollen */
 .pd-bg{position:absolute;left:50%;top:50%;width:260vmax;height:260vmax;margin:-130vmax 0 0 -130vmax;background:repeating-conic-gradient(from 0deg,var(--pd-1) 0deg 9deg,var(--pd-2) 9deg 18deg);animation:pd-draai 120s linear infinite}
 .pd-vig{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,transparent 20%,color-mix(in srgb,var(--pd-diep) 88%,transparent) 75%)}
 .pd-spot{position:absolute;bottom:-12vw;width:22vw;height:125vh;mix-blend-mode:screen;filter:blur(18px);transform-origin:50% 100%;
