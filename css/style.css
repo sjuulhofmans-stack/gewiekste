@@ -198,7 +198,6 @@ col.wsp{width:28px}
 .vq-row{height:var(--rowT)}
 .vq-l{height:40px;border-radius:8px;display:grid;place-items:center;font-weight:800;background:var(--accent-soft);border:1.5px solid var(--accent)}
 .vq-foot{display:flex;flex-wrap:wrap;gap:10px}
-.vq-steps{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:16px}
 .fld{display:flex;flex-direction:column;gap:3px;font-size:.8rem;font-weight:700;color:var(--ink-2);text-transform:uppercase;letter-spacing:.06em}
 .fld .inp{text-transform:none;letter-spacing:0;font-size:1rem;color:var(--ink);font-weight:400}
 .efoot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 12px 12px 64px;border-top:1px solid var(--line)}

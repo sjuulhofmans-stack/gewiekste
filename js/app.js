@@ -297,8 +297,7 @@ function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som
       <input class="inp" id="e_${r.id}_${q}_${g.id}_t" data-act="rf" data-f="tekst" data-k="${k}" ${base} value="${esc(g.tekst)}" placeholder="${v.soort==='creatief'?'Bijv. filmpje, tekening, creativiteit':'Het juiste antwoord'}" aria-label="Antwoord ${lab(v,k)}"${d}>
       <input class="inp num" id="e_${r.id}_${q}_${g.id}_p" data-act="rf" data-f="punten" data-k="${k}" ${base} inputmode="numeric" value="${g.punten||''}" placeholder="0" aria-label="Punten ${lab(v,k)}"${d}>
       <button class="ibtn${on?' danger':''}" data-act="del-regel" data-k="${k}" data-ck="${ck}" ${base} aria-label="Regel verwijderen"${d||(v.regels.length<2?' disabled':'')}>${on?'Zeker?':'✕'}</button></div>`});
-  h+=`</div><div class="vq-foot"><button class="btn" data-act="add-regel" ${base}${d}>+ Antwoordregel</button><button class="btn" data-act="verdeel" ${base}${d}>Verdeel ${v.punten||0} punten gelijk</button></div>
-    <div class="vq-steps"><button class="btn" data-act="vq" data-q="${q-1}"${q<=1?' disabled':''}>← Vorige vraag</button><button class="btn primary" data-act="vq" data-q="${q+1}"${q>=V.length?' disabled':''}>Volgende vraag →</button></div></section></div>`;
+  h+=`</div><div class="vq-foot"><button class="btn" data-act="add-regel" ${base}${d}>+ Antwoordregel</button><button class="btn" data-act="verdeel" ${base}${d}>Verdeel ${v.punten||0} punten gelijk</button></div></section></div>`;
   return h}
 
 /* ---------- Overzicht & uitslag ---------- */
