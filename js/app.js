@@ -437,63 +437,151 @@ function vStats(){const T=teams();if(!T.length)return empty('Nog geen statistiek
   return h}
 
 /* ---------- winnaar tonen (alleen beheerder) ---------- */
-// schermvullende show bovenop de pagina: aftellen 10 → 1, plaats 3 en 2, tromgeroffel, winnaar met confetti
+// schermvullende show "Vuurwerk" met het geluid "Klokkentoren" (gekozen op shows.html):
+// aftellen 10 → 1 met een kerkklok en een vuurpijl bij elk getal, plaats 3 en 2, paukenroffel, even doodstil, dan de winnaar met vuurwerk
 let SH=null;
 const wacht=ms=>new Promise(r=>setTimeout(r,ms));
-// geluiden zelf opgewekt met de Web Audio API, er zijn geen geluidsbestanden nodig
-function geluid(){const niks=()=>{};try{const C=new (window.AudioContext||window.webkitAudioContext)();const T=()=>C.currentTime;
-  const toon=(f,t,d,type,v)=>{const o=C.createOscillator(),g=C.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,T()+t);g.gain.linearRampToValueAtTime(v,T()+t+.01);g.gain.exponentialRampToValueAtTime(.001,T()+t+d);o.connect(g).connect(C.destination);o.start(T()+t);o.stop(T()+t+d+.05)};
-  const ruis=(t,d,v)=>{const b=C.createBuffer(1,Math.ceil(C.sampleRate*d),C.sampleRate),a=b.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=(Math.random()*2-1)*(1-i/a.length);
-    const s=C.createBufferSource(),f=C.createBiquadFilter(),g=C.createGain();f.type='lowpass';f.frequency.value=1600;g.gain.value=v;s.buffer=b;s.connect(f).connect(g).connect(C.destination);s.start(T()+t)};
+const ZIN={10:'Lont aan…',7:'Nog even…',4:'Afstand houden…',3:'Oren dicht!',1:'!!!'};
+// geluiden zelf opgewekt met de Web Audio API, er zijn geen geluidsbestanden nodig.
+// Alles loopt via een compressor (hard zonder te kraken) en een galm (klinkt als een grote zaal).
+function geluid(){const niks=()=>{};try{const C=new (window.AudioContext||window.webkitAudioContext)();if(C.resume)C.resume();
+  // vast = moment op de geluidsklok waarop het volgende geluid moet klinken (zie om); anders "nu"
+  let vast=null;const T=()=>vast!=null?vast:C.currentTime;
+  // vertraging tussen "afspelen" en "uit de speaker" (bij bluetooth soms een flink deel van een seconde)
+  const lat=()=>Math.max(0,C.outputLatency||C.baseLatency||0);
+  const p0=performance.now()/1000,a0=C.currentTime;
+  const comp=C.createDynamicsCompressor();comp.threshold.value=-20;comp.knee.value=10;comp.ratio.value=6;comp.attack.value=.003;comp.release.value=.25;
+  const hoofd=C.createGain(),mix=C.createGain(),galm=C.createConvolver(),gg=C.createGain();
+  comp.connect(hoofd).connect(C.destination);mix.connect(comp);mix.connect(galm);galm.connect(gg).connect(comp);gg.gain.value=.35;
+  {const n=Math.floor(C.sampleRate*3),b=C.createBuffer(2,n,C.sampleRate);for(let c=0;c<2;c++){const a=b.getChannelData(c);for(let i=0;i<n;i++)a[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.5)}galm.buffer=b}
+  const wit=C.createBuffer(1,C.sampleRate*2,C.sampleRate);{const a=wit.getChannelData(0);for(let i=0;i<a.length;i++)a[i]=Math.random()*2-1}
+  const st=n=>Math.pow(2,n/12),F=55; // grondtoon (A, laag)
+  // volume: a = aanzwellen, d = uitsterven
+  const env=(g,s,a,v,d)=>{g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(Math.max(v,.001),s+a);g.gain.exponentialRampToValueAtTime(.0001,s+a+d)};
+  // toon met optioneel glijden (f2 in gl seconden) en filter (lp, naar lp2)
+  const toon=(f,t,d,type,v,o={})=>{const s=T()+t,a=o.a||.005,os=C.createOscillator(),g=C.createGain();os.type=type;os.frequency.setValueAtTime(f,s);
+    if(o.f2)os.frequency.exponentialRampToValueAtTime(o.f2,s+(o.gl||d));if(o.det)os.detune.value=o.det;let n=os;
+    if(o.lp){const fl=C.createBiquadFilter();fl.type='lowpass';fl.Q.value=o.q||1;fl.frequency.setValueAtTime(o.lp,s);if(o.lp2)fl.frequency.exponentialRampToValueAtTime(o.lp2,s+a+d);os.connect(fl);n=fl}
+    n.connect(g).connect(mix);env(g,s,a,v,d);os.start(s);os.stop(s+a+d+.1)};
+  const ruis=(t,d,v,o={})=>{const s=T()+t,a=o.a||.003,b=C.createBufferSource(),fl=C.createBiquadFilter(),g=C.createGain();b.buffer=wit;b.loop=true;
+    fl.type=o.type||'lowpass';fl.Q.value=o.q||.7;fl.frequency.setValueAtTime(o.f||1600,s);if(o.f2)fl.frequency.exponentialRampToValueAtTime(o.f2,s+(o.gl||a+d));
+    b.connect(fl).connect(g).connect(mix);env(g,s,a,v,d);b.start(s,Math.random()*1.5);b.stop(s+a+d+.1)};
+  // instrumenten (t = seconden vanaf nu, v = volume)
+  const I={
+    kick:(t,v)=>{toon(150,t,.5,'sine',v,{f2:40,gl:.16});ruis(t,.02,v*.35,{type:'highpass',f:2500})},
+    boem:(t,v)=>{toon(75,t,2.4,'sine',v,{f2:26,gl:1.8});toon(140,t,.6,'triangle',v*.5,{f2:45,gl:.4});ruis(t,1.8,v*.6,{f:2200,f2:70})},
+    braam:(t,f,v)=>[1,2,3,4].forEach((m,i)=>[-12,10].forEach(dt=>toon(f*m,t,1.8,'sawtooth',v*.13/(i+1),{a:.04,det:dt,lp:2600,lp2:160,q:2}))),
+    pauk:(t,f,v)=>{toon(f*2.2,t,1.6,'sine',v*.8,{f2:f*2,gl:.08});toon(f*3.4,t,.7,'sine',v*.25);ruis(t,.2,v*.35,{f:1200,f2:200})},
+    bekken:(t,v)=>ruis(t,2.4,v*.3,{type:'highpass',f:5500}),
+    // zware torenklok: tik-tak
+    tik:(t,v,hoog)=>{toon(hoog?2600:1900,t,.04,'square',v*.1,{lp:5000});ruis(t,.015,v*.35,{type:'highpass',f:6000})},
+    // hartslag: boem-boem, met een klikje erbij zodat je hem ook op laptopspeakers hoort
+    hart:(t,v)=>{toon(95,t,.22,'sine',v,{f2:45,gl:.1});ruis(t,.03,v*.3,{f:500});toon(85,t+.2,.28,'sine',v*.75,{f2:40,gl:.12});ruis(t+.2,.03,v*.22,{f:450})},
+    stab:(t,f,v)=>[0,3,7,12].forEach(n=>[-10,10].forEach(dt=>toon(f*st(n),t,.55,'sawtooth',v*.06,{det:dt,lp:5000,lp2:400}))),
+    // schrille violen: drie tonen die net vals samen klinken, daar word je onrustig van
+    gil:(t,f,v)=>[0,1,6].forEach(n=>toon(f*st(n),t,1.3,'sawtooth',v*.045,{a:.25,lp:6000})),
+    // aanzwellend gesis en een toon die steeds hoger gaat
+    riser:(t,d,v)=>{ruis(t,.15,v*.4,{type:'bandpass',f:200,f2:7000,q:3,a:d,gl:d});toon(70,t,.15,'sawtooth',v*.1,{f2:1400,gl:d,a:d,lp:5000})},
+    // kerkklok: veel boventonen die lang naklinken
+    bel:(t,f,v)=>{[[1,4],[2,3],[2.4,2.5],[3,2],[4.2,1.4],[5.4,1]].forEach(([m,d],i)=>toon(f*m,t,d,'sine',v*.22/(i*.6+1),{a:.004}));ruis(t,.05,v*.2,{type:'highpass',f:3000})}
+  };
+  // zacht zoemend tapijt onder het aftellen: wordt per getal hoger, helderder en gaat trillen
+  const maakBed=k0=>{const s=T(),g=C.createGain(),fl=C.createBiquadFilter(),tr=C.createGain(),lfo=C.createOscillator(),ld=C.createGain();
+    g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.14,s+1.2);fl.type='lowpass';fl.Q.value=5;fl.frequency.value=220+k0*2400;
+    lfo.frequency.value=5;ld.gain.value=0;tr.gain.value=1;lfo.connect(ld).connect(tr.gain);
+    const O=[[1,-14],[1,14],[.5,0],[1.5,6],[2,-8]].map(([m,dt])=>{const o=C.createOscillator();o.type='triangle';o.frequency.value=F*m;o.detune.value=dt+k0*1200;o.connect(fl);o.start(s);return[o,dt]});
+    fl.connect(tr).connect(g).connect(mix);lfo.start(s);
+    const naar=(k,tc)=>{const t=T();fl.frequency.setTargetAtTime(220+k*2400,t,tc);O.forEach(([o,dt])=>o.detune.setTargetAtTime(dt+k*1200,t,tc));
+      ld.gain.setTargetAtTime(k>.6?Math.min(.6,(k-.6)*1.2):0,t,tc);lfo.frequency.setTargetAtTime(5+k*8,t,tc);g.gain.setTargetAtTime(Math.min(.3,.13+k*.12),t,tc)};
+    return{stap:k=>naar(k,.3),stijg:d=>naar(1.8,d/2.5),
+      stop:f=>{const t=T();g.gain.cancelScheduledValues(t);g.gain.setValueAtTime(Math.max(g.gain.value,.0002),t);g.gain.exponentialRampToValueAtTime(.0001,t+f);O.forEach(([o])=>o.stop(t+f+.05));lfo.stop(t+f+.05)}}};
+  const vul=(d,iv,fn)=>{let i=0;for(let x=0;x<d-.05;x+=iv)fn(x,i++)};
+  // paukenroffel die steeds harder en sneller wordt
+  const roffel=d=>{let x=0;while(x<d){const k=x/d;I.pauk(x,F,(.2+.8*k*k)*.8);x+=Math.max(.035,.11-.075*k)}};
+  // slotmuziek: drie orkestnoten en een groot slotakkoord
+  const fanfare=()=>{const f=196;[[0,0,.55],[7,.5,.55],[12,1,.9]].forEach(([n,t,d])=>{[-9,9].forEach(dt=>toon(f*st(n),t,d+.1,'sawtooth',.055,{det:dt,lp:4500}));toon(f*st(n)/2,t,d+.1,'triangle',.1)});
+    const t=1.5;[0,4,7,12,16].forEach(n=>[-12,0,12].forEach(dt=>toon(f*st(n),t,3.4,'sawtooth',.03,{a:.05,det:dt,lp:6500,lp2:900})));toon(f/2,t,3,'triangle',.25);I.pauk(t,f/4,1);I.bekken(t,.9);I.boem(t,.7)};
+  let bed=null;
   return{
-    tik:n=>{toon(320+(10-n)*70,0,.16,'square',.1);if(n<=3){toon(70,0,.3,'sine',.6);toon(58,.2,.3,'sine',.45)}}, // laatste drie: hartslag
-    roffel:sec=>{const n=Math.floor(sec*20);for(let i=0;i<n;i++)ruis(i/20,.07,.1+.4*i/n)},
-    boem:()=>{toon(55,0,1.4,'sine',.8);ruis(0,.9,.7)},
-    fanfare:()=>{[[523,0],[659,.14],[784,.28],[1047,.42],[784,.7],[1047,.84]].forEach(([f,t])=>{toon(f,t,.45,'sawtooth',.07);toon(f/2,t,.45,'triangle',.12)});[523,659,784,1047].forEach(f=>toon(f,1.05,2,'sawtooth',.05))},
+    // onheilspellend begin: diepe dreun en het zoemende tapijt komt op
+    start:()=>{bed=maakBed(0);I.boem(0,.9);I.braam(0,F,.8)},
+    // één getal van het aftellen (n = 10 … 1, ms = hoe lang het getal blijft staan): de klok slaat elke keer hoger
+    tel:(n,ms)=>{const d=ms/1000,k=(10-n)/9,f=F*st(10-n);if(bed)bed.stap(k);
+      I.bel(0,f*4,1);I.boem(0,.4);
+      if(n<=3){I.boem(0,1);I.gil(.05,f*4,.6+.3*(3-n))}
+      vul(d,.5,(x,i)=>I.tik(x,2,i%2===0))},
+    // na de 1: alles valt weg, je hoort alleen nog je hart
+    na:()=>{if(bed){bed.stop(.08);bed=null}I.hart(.5,1.1);I.hart(1.3,1.1)},
+    roffel,
+    onthul:()=>{I.boem(0,.9);I.bekken(0,.7);I.stab(0,F*4,.8)},
+    // vlak voor de winnaar: tapijt terug en steeds hoger, roffel en aanzwellend gesis
+    spanning:d=>{bed=maakBed(.9);bed.stijg(d);roffel(d);I.riser(0,d,1)},
+    // doodstil (d seconden), daarna komt het geluid in één klap terug
+    stilte:d=>{if(bed){bed.stop(.03);bed=null}const s=T(),g=hoofd.gain;g.cancelScheduledValues(s);g.setValueAtTime(1,s);g.linearRampToValueAtTime(.0001,s+.04);g.setValueAtTime(.0001,s+d);g.linearRampToValueAtTime(1,s+d+.02)},
+    // de winnaar: grote klap, de klokken luiden omlaag en het orkest speelt
+    winnaar:()=>{I.boem(0,1.1);I.kick(0,1);I.bekken(0,1);[0,.6,1.2,1.8].forEach((x,i)=>I.bel(x,F*4*st([12,7,4,0][i]),.8));fanfare()},
+    // om(t): de geluiden die hierna worden aangeroepen klinken op moment t van de geluidsklok; om(null) = weer "nu"
+    om:t=>{vast=t==null?null:Math.max(t,C.currentTime)},
+    // klok: het moment dat je nu uit de speaker hoort; loopt het geluid (nog) niet, dan de gewone klok
+    klok:()=>C.state==='running'?C.currentTime-lat():performance.now()/1000-p0+a0,
     stil:()=>{try{C.close()}catch(e){}}}}
-  catch(e){return{tik:niks,roffel:niks,boem:niks,fanfare:niks,stil:niks}}}
-function confetti(cv){const ctx=cv.getContext('2d'),d=window.devicePixelRatio||1,css=getComputedStyle(document.documentElement);
-  const kl=['--accent','--joker','--good','--bad','--warn','--night-ink'].map(k=>css.getPropertyValue(k).trim());
+  catch(e){const p0=performance.now()/1000;return{start:niks,tel:niks,na:niks,roffel:niks,onthul:niks,spanning:niks,stilte:niks,winnaar:niks,om:niks,klok:()=>performance.now()/1000-p0,stil:niks}}}
+// vuurwerk op een canvas: vonken die uiteenspatten en daarna langzaam naar beneden dwarrelen
+function vuurwerk(cv){const ctx=cv.getContext('2d'),d=window.devicePixelRatio||1,css=getComputedStyle(document.documentElement);
+  const kl=['--sh-goud','--sh-rood','--sh-groen','--sh-blauw','--sh-roze','--sh-wit'].map(k=>css.getPropertyValue(k).trim()).filter(Boolean),kies=()=>kl[Math.floor(Math.random()*kl.length)];
   const rustig=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let P=[],id=0,regen=false;const fit=()=>{cv.width=innerWidth*d;cv.height=innerHeight*d};fit();addEventListener('resize',fit);
-  const deel=(x,y,vx,vy)=>({x,y,vx,vy,w:(7+Math.random()*7)*d,h:(10+Math.random()*12)*d,c:kl[Math.floor(Math.random()*kl.length)],r:Math.random()*6,vr:(Math.random()-.5)*.35});
-  const kanon=(links,n)=>{if(rustig)n=Math.round(n/4);for(let i=0;i<n;i++){const a=(links?-62:-118)*Math.PI/180+(Math.random()-.5)*.7,s=(18+Math.random()*20)*d;P.push(deel(links?0:cv.width,cv.height,Math.cos(a)*s,Math.sin(a)*s))}};
+  const vonk=(x,y,vx,vy,dl)=>({x,y,vx,vy,w:(2+Math.random()*1.5)*d,c:kies(),l:1,dl});
+  // vuurpijl die uiteenspat op (x, y), als deel van de schermbreedte en -hoogte
+  const knal=(x,y,n)=>{if(rustig)n=Math.round(n/4);const c=kies();for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=(1.5+Math.random()*7)*d,p=vonk(x*cv.width,y*cv.height,Math.cos(a)*s,Math.sin(a)*s,.01+Math.random()*.008);if(Math.random()<.75)p.c=c;P.push(p)}};
   const stap=()=>{ctx.clearRect(0,0,cv.width,cv.height);
-    if(regen&&P.length<900)for(let i=0;i<(rustig?1:4);i++)P.push(deel(Math.random()*cv.width,-30*d,(Math.random()-.5)*3*d,(1+Math.random()*3)*d));
-    P=P.filter(p=>p.y<cv.height+50*d);
-    for(const p of P){p.vx*=.97;p.vy=p.vy*.96+.25*d;p.x+=p.vx+Math.sin(p.r)*.6*d;p.y+=p.vy;p.r+=p.vr;
-      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r);ctx.scale(Math.cos(p.r*1.7),1);ctx.fillStyle=p.c;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);ctx.restore()}
-    id=requestAnimationFrame(stap)};stap();
-  return{kanon,regen:v=>{regen=v},stop:()=>{cancelAnimationFrame(id);removeEventListener('resize',fit)}}}
+    if(regen&&P.length<900)for(let i=0;i<(rustig?1:4);i++)P.push(vonk(Math.random()*cv.width,-30*d,(Math.random()-.5)*3*d,(1+Math.random()*3)*d,.004));
+    P=P.filter(p=>p.y<cv.height+50*d&&p.l>0);
+    ctx.globalCompositeOperation='lighter';
+    for(const p of P){p.vx*=.955;p.vy=p.vy*.955+.07*d;p.x+=p.vx;p.y+=p.vy;p.l-=p.dl;ctx.globalAlpha=Math.max(0,p.l);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(p.x,p.y,p.w,0,6.3);ctx.fill()}
+    ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;id=requestAnimationFrame(stap)};stap();
+  return{knal,regen:v=>{regen=v},stop:()=>{cancelAnimationFrame(id);removeEventListener('resize',fit)}}}
 async function toonWinnaar(){if(SH||!S.isOwner)return;const L=ranking(false);if(!L.length)return;
   const c=cfg(),nm=x=>esc(x.naam||'Team '+x.nr),kop=`<div class="sh-kop">${esc(c.naam||'Genneps Gewiekste')}${c.editie?' · '+esc(c.editie):''}</div>`;
   const win=L.filter(x=>x.place===1),rest=win.length>1?[]:L.slice(1,3).reverse(); // eerst plaats 3, dan 2
   const el=document.createElement('div');el.id='show';el.className='show';el.setAttribute('role','dialog');el.setAttribute('aria-modal','true');el.setAttribute('aria-label','De winnaar bekendmaken');
-  el.innerHTML='<div class="sh-licht" aria-hidden="true"></div><canvas class="sh-conf" aria-hidden="true"></canvas><button class="sh-x" aria-label="Show stoppen">✕</button><div class="sh-stage" aria-live="assertive"></div>';
+  el.innerHTML='<div class="sh-licht" aria-hidden="true"></div><div class="sh-deco" aria-hidden="true"></div><div class="sh-vig" aria-hidden="true"></div><canvas class="sh-conf" aria-hidden="true"></canvas><button class="sh-x" aria-label="Show stoppen">✕</button><div class="sh-stage" aria-live="assertive"></div>';
   document.body.appendChild(el);document.body.classList.add('show-open');SH=el;
-  const G=geluid(),K=confetti(el.querySelector('canvas')),st=el.querySelector('.sh-stage');
+  const G=geluid(),K=vuurwerk(el.querySelector('canvas')),st=el.querySelector('.sh-stage'),vig=el.querySelector('.sh-vig');
   let stop=false,iv=0;
   const toets=e=>{if(e.key==='Escape')sluit()};
   const sluit=()=>{stop=true;clearInterval(iv);G.stil();K.stop();el.remove();document.body.classList.remove('show-open');removeEventListener('keydown',toets);SH=null};
   addEventListener('keydown',toets);el.querySelector('.sh-x').onclick=sluit;
   const fase=(f,html)=>{el.dataset.fase=f;st.innerHTML=html};
-  const w=async ms=>{await wacht(ms);if(stop)throw 0};
+  // alles loopt op de klok van het geluid: het geluid wordt een kwartseconde vooruit klaargezet,
+  // en het beeld wisselt precies op het moment dat je dat geluid hoort
+  let tijd=G.klok()+.35;
+  const tot=async t=>{for(;;){if(stop)throw 0;const r=t-G.klok();if(r<=0)return;await wacht(Math.min(r*1000,40))}};
+  const stap=async(sec,klank,beeld)=>{await tot(tijd-.25);G.om(tijd);try{klank()}finally{G.om(null)}await tot(tijd);beeld();tijd+=sec};
+  const rnd=(a,b)=>a+Math.random()*(b-a);
+  // bij elke klokslag: gloed langs de randen en een vuurpijl
+  const klap=n=>{vig.classList.remove('aan');void vig.offsetWidth;vig.classList.add('aan');K.knal(rnd(.15,.85),rnd(.12,.45),50+(10-n)*8)};
   try{
-    fase('intro',kop+'<div class="sh-titel">Wie wordt de winnaar?</div>');await w(2400);
-    fase('tel',kop+'<div class="sh-ring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="sh-rb" cx="100" cy="100" r="90"/><circle class="sh-rv" cx="100" cy="100" r="90"/></svg><span class="sh-num"></span></div><div class="sh-sub"></div>');
-    const num=st.querySelector('.sh-num'),rv=st.querySelector('.sh-rv'),sub=st.querySelector('.sh-sub');
-    const zin={10:'Daar gaan we…',7:'Het wordt spannend…',5:'Nog even volhouden…',3:'Adem in…',1:'!!!'};
-    for(let n=10;n>=1;n--){const ms=n<=3?1400:1000;
-      num.textContent=n;num.classList.remove('pop');void num.offsetWidth;num.classList.add('pop');
-      rv.style.transitionDuration=ms+'ms';rv.style.strokeDashoffset=String(565.5*(1-(n-1)/10));
-      if(zin[n])sub.textContent=zin[n];el.classList.toggle('spannend',n<=3);G.tik(n);await w(ms)}
-    el.classList.remove('spannend');
-    for(const x of rest){fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats…</div>`);G.roffel(1.8);await w(2000);
-      fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats</div><div class="sh-naam">${nm(x)}</div><div class="sh-pnt">${x.tot} punten</div>`);G.boem();K.kanon(true,40);K.kanon(false,40);await w(4000)}
-    fase('drum',`<div class="sh-titel">En de winnaar van ${esc(c.naam||'Genneps Gewiekste')} is…</div>`);el.classList.add('spannend');G.roffel(4.2);await w(4400);
-    el.classList.remove('spannend');
-    fase('winnaar',`<div class="sh-flits" aria-hidden="true"></div>${OWL}<div class="sh-kop">${win.length>1?'De winnaars zijn':'De winnaar is'}</div>${win.map(x=>`<div class="sh-naam groot">${nm(x)}</div>`).join('')}<div class="sh-pnt">${win[0].tot} punten</div><button class="btn primary big sh-door">Bekijk de hele uitslag</button>`);
-    G.boem();G.fanfare();K.kanon(true,180);K.kanon(false,180);K.regen(true);iv=setInterval(()=>K.kanon(Math.random()<.5,90),2200);
+    await stap(2.6,()=>G.start(),()=>fase('intro',kop+'<div class="sh-titel">Wie wordt de winnaar?</div>'));
+    let num,rv,sub;
+    // de laatste getallen blijven langer staan: dan wordt het pas echt spannend
+    for(let n=10;n>=1;n--){const ms=n>6?1000:n>3?1200:1700;
+      await stap(ms/1000,()=>G.tel(n,ms),()=>{
+        if(n===10){fase('tel',kop+'<div class="sh-ring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="sh-rb" cx="100" cy="100" r="90"/><circle class="sh-rv" cx="100" cy="100" r="90"/></svg><span class="sh-num"></span></div><div class="sh-sub"></div>');
+          num=st.querySelector('.sh-num');rv=st.querySelector('.sh-rv');sub=st.querySelector('.sh-sub')}
+        num.textContent=n;num.classList.remove('pop');void num.offsetWidth;num.classList.add('pop');
+        rv.style.transitionDuration=ms+'ms';rv.style.strokeDashoffset=String(565.5*(1-(n-1)/10));
+        if(ZIN[n])sub.textContent=ZIN[n];el.classList.toggle('spannend',n<=3);klap(n)})}
+    await stap(2.2,()=>G.na(),()=>{el.classList.remove('spannend');fase('stil',kop+'<div class="sh-titel">De punten zijn geteld…</div>')});
+    for(const x of rest){
+      await stap(2,()=>G.roffel(1.8),()=>fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats…</div>`));
+      await stap(4,()=>G.onthul(),()=>{fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats</div><div class="sh-naam">${nm(x)}</div><div class="sh-pnt">${x.tot} punten</div>`);K.knal(.3,.3,80);K.knal(.7,.3,80)})}
+    await stap(4.5,()=>G.spanning(4.4),()=>{fase('drum',`<div class="sh-titel">En de winnaar van ${esc(c.naam||'Genneps Gewiekste')} is…</div>`);el.classList.add('spannend')});
+    // even helemaal zwart en doodstil… en dan de winnaar
+    await stap(.95,()=>G.stilte(.9),()=>{el.classList.remove('spannend');el.classList.add('zwart')});
+    await stap(0,()=>G.winnaar(),()=>{el.classList.remove('zwart');
+      fase('winnaar',`<div class="sh-flits" aria-hidden="true"></div>${OWL}<div class="sh-kop">${win.length>1?'De winnaars zijn':'De winnaar is'}</div>${win.map(x=>`<div class="sh-naam groot">${nm(x)}</div>`).join('')}<div class="sh-pnt">${win[0].tot} punten</div><button class="btn primary big sh-door">Bekijk de hele uitslag</button>`)});
+    for(let i=0;i<5;i++)K.knal(rnd(.15,.85),rnd(.12,.5),130);K.regen(true);iv=setInterval(()=>K.knal(rnd(.12,.88),rnd(.1,.5),120),900);
     st.querySelector('.sh-door').onclick=sluit;
     if(!c.onthuld){const cc=clone(c);cc.onthuld=true;saveConfig(cc)}
   }catch(e){if(e!==0)throw e}}
