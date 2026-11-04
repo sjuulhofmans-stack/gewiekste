@@ -363,7 +363,7 @@ function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   <div class="uitslag"><div class="seg" role="group" aria-label="Uitslag"><button data-act="uj" data-m="met" aria-pressed="${!zj}">Met joker</button><button data-act="uj" data-m="zonder" aria-pressed="${zj}">Zonder joker</button></div>${notes}
   <div class="grid-wrap"><table class="grid"><colgroup><col class="wr"><col class="wu"><col class="wr"></colgroup>
   <thead><tr><th>Plaats</th><th class="tl">Team</th><th>Punten</th></tr></thead><tbody>`;
-  L.forEach(x=>{h+=`<tr><td><b>${x.place}</b></td><td class="tl" title="${nm(x)}">${nm(x)}</td><td><b>${x.tot}</b></td></tr>`});
+  L.forEach(x=>{h+=`<tr><td><b>${x.place}</b></td><td class="tl" title="${nm(x)}"><div class="tcel"><span class="tnaam">${nm(x)}</span><span class="tnr">Team ${x.nr}</span></div></td><td><b>${x.tot}</b></td></tr>`});
   h+='</tbody></table></div>';
   if(S.isOwner)h+=`<div class="toolbar"><button class="btn" data-act="winnaar">Winnaar nog een keer tonen</button><button class="btn" data-act="verberg">Uitslag weer verbergen</button></div>`;
   return h+'</div>'}

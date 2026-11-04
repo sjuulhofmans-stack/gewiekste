@@ -271,6 +271,10 @@ col.wsp{width:28px}
 .grid.ov .tnm{font-size:.8rem;line-height:1.2;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;hyphens:auto;padding:2px 0 0}
 .uitslag .grid-wrap{max-height:none;min-height:0;max-width:100%}
 col.wu{width:360px}
+/* uitslag: teamnaam links, teamnummer als rustige pil rechts in de cel */
+.tcel{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.tnaam{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.tnr{flex:none;font-size:.78rem;font-weight:700;color:var(--ink-2);background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:1px 9px;font-variant-numeric:tabular-nums}
 
 /* statistieken: kaartjes met één groot getal */
 .stitle{font-size:1.15rem;margin:6px 0 -6px}
