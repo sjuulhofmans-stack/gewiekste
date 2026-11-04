@@ -179,7 +179,7 @@ col.wsp{width:28px}
 .vq-grid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:18px;align-items:start}
 /* chat: knop rechts in de balk; open = derde kolom rechts, de vragenkolom wordt smaller */
 .chat-knop{margin-left:auto}
-.vq-grid.met-chat{grid-template-columns:300px minmax(0,1fr) 380px}
+.vq-grid.met-chat{grid-template-columns:360px minmax(0,1fr) 380px} /* vragenlijst blijft even breed als zonder chat */
 .chat{background:var(--surface);border:1.5px solid var(--line-strong);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .chat-kop{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line);background:var(--surface-2)}
 .chat-kop h3{font-size:1.2rem}
