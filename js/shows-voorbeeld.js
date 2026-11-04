@@ -78,7 +78,12 @@ const DEMO=[{nr:7,naam:'De Slimme Uilen',tot:812,place:1},{nr:3,naam:'De Snelle 
 
 // geluiden zelf opgewekt met de Web Audio API, er zijn geen geluidsbestanden nodig.
 // Alles loopt via een compressor (hard zonder te kraken) en een galm (klinkt als een grote zaal).
-function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||window.webkitAudioContext)();const T=()=>C.currentTime;if(C.resume)C.resume();
+function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||window.webkitAudioContext)();if(C.resume)C.resume();
+  // vast = moment op de geluidsklok waarop het volgende geluid moet klinken (zie om); anders "nu"
+  let vast=null;const T=()=>vast!=null?vast:C.currentTime;
+  // vertraging tussen "afspelen" en "uit de speaker" (bij bluetooth soms een flink deel van een seconde)
+  const lat=()=>Math.max(0,C.outputLatency||C.baseLatency||0);
+  const p0=performance.now()/1000,a0=C.currentTime;
   const comp=C.createDynamicsCompressor();comp.threshold.value=-20;comp.knee.value=10;comp.ratio.value=6;comp.attack.value=.003;comp.release.value=.25;
   const hoofd=C.createGain(),mix=C.createGain(),galm=C.createConvolver(),gg=C.createGain();
   comp.connect(hoofd).connect(C.destination);mix.connect(comp);mix.connect(galm);galm.connect(gg).connect(comp);gg.gain.value=.35;
@@ -210,8 +215,13 @@ function geluid(P){const niks=()=>{};try{const C=new (window.AudioContext||windo
     winnaar:()=>{I.boem(0,1.1);I.kick(0,1);I.bekken(0,1);if(P.hit==='donder')I.donder(0,1);if(P.hit==='knal'||P.einde==='explosie')I.knal(0,1.2);
       if(P.juich)I.publiek(0,7,2.2);if(P.hit==='bel')[0,.6,1.2,1.8].forEach((x,i)=>I.bel(x,P.f*4*st([12,7,4,0][i]),.8));fan(FAN[P.fan]||FAN.feest)},
     vuur:()=>{if(P.hit==='knal'){I.fluit(0,.6);I.knal(.8,.5)}},
+    // om(t): de geluiden die hierna worden aangeroepen klinken op moment t van de geluidsklok; om(null) = weer "nu"
+    om:t=>{vast=t==null?null:Math.max(t,C.currentTime)},
+    // klok: het moment dat je nu uit de speaker hoort; loopt het geluid (nog) niet, dan de gewone klok
+    klok:()=>C.state==='running'?C.currentTime-lat():performance.now()/1000-p0+a0,
+    vertraging:lat,
     stil:()=>{try{C.close()}catch(e){}}}}
-  catch(e){return{start:niks,tel:niks,na:niks,roffel:niks,onthul:niks,spanning:niks,stilte:niks,winnaar:niks,vuur:niks,stil:niks}}}
+  catch(e){const p0=performance.now()/1000;return{start:niks,tel:niks,na:niks,roffel:niks,onthul:niks,spanning:niks,stilte:niks,winnaar:niks,vuur:niks,om:niks,klok:()=>performance.now()/1000-p0,vertraging:()=>0,stil:niks}}}
 // deeltjes op een canvas: confetti, gouden snippers, serpentines, pixels of vonken (vuurwerk), en regen bij onweer
 function confetti(cv,kleuren,vorm){const ctx=cv.getContext('2d'),d=window.devicePixelRatio||1,css=getComputedStyle(document.documentElement);
   const wit=css.getPropertyValue('--sh-wit').trim(),kl=kleuren.map(k=>css.getPropertyValue(k).trim()).filter(Boolean),kies=()=>kl[Math.floor(Math.random()*kl.length)]||wit;
@@ -250,7 +260,11 @@ async function toonWinnaar(id,gid){if(SH)return;const L=DEMO,demo=true;
   const sluit=()=>{stop=true;clearInterval(iv);G.stil();K.stop();el.remove();document.body.classList.remove('show-open');removeEventListener('keydown',toets);SH=null};
   addEventListener('keydown',toets);el.querySelector('.sh-x').onclick=sluit;
   const fase=(f,html)=>{el.dataset.fase=f;st.innerHTML=html};
-  const w=async ms=>{await wacht(ms);if(stop)throw 0};
+  // alles loopt op de klok van het geluid: het geluid wordt een kwartseconde vooruit klaargezet,
+  // en het beeld wisselt precies op het moment dat je dat geluid hoort
+  let tijd=G.klok()+.35;
+  const tot=async t=>{for(;;){if(stop)throw 0;const r=t-G.klok();if(r<=0)return;await wacht(Math.min(r*1000,40))}};
+  const stap=async(sec,klank,beeld)=>{await tot(tijd-.25);G.om(tijd);try{klank()}finally{G.om(null)}await tot(tijd);beeld();tijd+=sec};
   const rnd=(a,b)=>a+Math.random()*(b-a);
   // bij elke klap: gloed langs de randen, en per show een extraatje (bliksem of vuurpijl)
   const klap=n=>{vig.classList.remove('aan');void vig.offsetWidth;vig.classList.add('aan');
@@ -258,25 +272,28 @@ async function toonWinnaar(id,gid){if(SH)return;const L=DEMO,demo=true;
     if(X.fx==='vuurpijl')K.knal(rnd(.15,.85),rnd(.12,.45),50+(10-n)*8)};
   if(X.fx==='bliksem')K.buien(true);
   try{
-    fase('intro',kop+'<div class="sh-titel">Wie wordt de winnaar?</div>');G.start();await w(2600);
-    fase('tel',kop+'<div class="sh-ring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="sh-rb" cx="100" cy="100" r="90"/><circle class="sh-rv" cx="100" cy="100" r="90"/></svg><span class="sh-num"></span></div><div class="sh-sub"></div>');
-    const num=st.querySelector('.sh-num'),rv=st.querySelector('.sh-rv'),sub=st.querySelector('.sh-sub');
+    await stap(2.6,()=>G.start(),()=>fase('intro',kop+'<div class="sh-titel">Wie wordt de winnaar?</div>'));
+    let num,rv,sub;
     // de laatste getallen blijven langer staan: dan wordt het pas echt spannend
     for(let n=10;n>=1;n--){const ms=n>6?1000:n>3?1200:1700;
-      num.textContent=n;num.classList.remove('pop');void num.offsetWidth;num.classList.add('pop');
-      rv.style.transitionDuration=ms+'ms';rv.style.strokeDashoffset=String(565.5*(1-(n-1)/10));
-      if(zin[n])sub.textContent=zin[n];el.classList.toggle('spannend',n<=3);G.tel(n,ms);klap(n);await w(ms)}
-    el.classList.remove('spannend');G.na();
-    fase('stil',kop+'<div class="sh-titel">De punten zijn geteld…</div>');await w(2200);
-    for(const x of rest){fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats…</div>`);G.roffel(1.8);await w(2000);
-      fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats</div><div class="sh-naam">${nm(x)}</div><div class="sh-pnt">${x.tot} punten</div>`);G.onthul();
-      if(X.deel==='vonk'){K.knal(.3,.3,80);K.knal(.7,.3,80)}else{K.kanon(true,40);K.kanon(false,40)}await w(4000)}
-    fase('drum',`<div class="sh-titel">En de winnaar van ${esc(c.naam||'Genneps Gewiekste')} is…</div>`);el.classList.add('spannend');G.spanning(4.4);await w(4500);
+      await stap(ms/1000,()=>G.tel(n,ms),()=>{
+        if(n===10){fase('tel',kop+'<div class="sh-ring"><svg viewBox="0 0 200 200" aria-hidden="true"><circle class="sh-rb" cx="100" cy="100" r="90"/><circle class="sh-rv" cx="100" cy="100" r="90"/></svg><span class="sh-num"></span></div><div class="sh-sub"></div>');
+          num=st.querySelector('.sh-num');rv=st.querySelector('.sh-rv');sub=st.querySelector('.sh-sub')}
+        num.textContent=n;num.classList.remove('pop');void num.offsetWidth;num.classList.add('pop');
+        rv.style.transitionDuration=ms+'ms';rv.style.strokeDashoffset=String(565.5*(1-(n-1)/10));
+        if(zin[n])sub.textContent=zin[n];el.classList.toggle('spannend',n<=3);klap(n)})}
+    await stap(2.2,()=>G.na(),()=>{el.classList.remove('spannend');fase('stil',kop+'<div class="sh-titel">De punten zijn geteld…</div>')});
+    for(const x of rest){
+      await stap(2,()=>G.roffel(1.8),()=>fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats…</div>`));
+      await stap(4,()=>G.onthul(),()=>{fase('plek',`<div class="sh-plaats">Op de ${x.place}e plaats</div><div class="sh-naam">${nm(x)}</div><div class="sh-pnt">${x.tot} punten</div>`);
+        if(X.deel==='vonk'){K.knal(.3,.3,80);K.knal(.7,.3,80)}else{K.kanon(true,40);K.kanon(false,40)}})}
+    await stap(4.5,()=>G.spanning(4.4),()=>{fase('drum',`<div class="sh-titel">En de winnaar van ${esc(c.naam||'Genneps Gewiekste')} is…</div>`);el.classList.add('spannend')});
     // even helemaal zwart en doodstil… en dan de winnaar
-    el.classList.remove('spannend');el.classList.add('zwart');G.stilte(.9);await w(950);el.classList.remove('zwart');
-    fase('winnaar',`<div class="sh-flits" aria-hidden="true"></div>${OWL}<div class="sh-kop">${win.length>1?'De winnaars zijn':'De winnaar is'}</div>${win.map(x=>`<div class="sh-naam groot">${nm(x)}</div>`).join('')}<div class="sh-pnt">${win[0].tot} punten</div><button class="btn primary big sh-door">${demo?'Voorproefje sluiten':'Bekijk de hele uitslag'}</button>`);
-    G.winnaar();
-    if(X.deel==='vonk'){for(let i=0;i<5;i++)K.knal(rnd(.15,.85),rnd(.12,.5),130);K.regen(true);iv=setInterval(()=>{G.vuur();setTimeout(()=>{if(!stop)K.knal(rnd(.12,.88),rnd(.1,.5),120)},800)},900)}
+    await stap(.95,()=>G.stilte(.9),()=>{el.classList.remove('spannend');el.classList.add('zwart')});
+    await stap(0,()=>G.winnaar(),()=>{el.classList.remove('zwart');
+      fase('winnaar',`<div class="sh-flits" aria-hidden="true"></div>${OWL}<div class="sh-kop">${win.length>1?'De winnaars zijn':'De winnaar is'}</div>${win.map(x=>`<div class="sh-naam groot">${nm(x)}</div>`).join('')}<div class="sh-pnt">${win[0].tot} punten</div><button class="btn primary big sh-door">${demo?'Voorproefje sluiten':'Bekijk de hele uitslag'}</button>`)});
+    // vuurpijl: de knal op het scherm komt tegelijk met de knal uit de speaker (0,8 s na het fluiten)
+    if(X.deel==='vonk'){for(let i=0;i<5;i++)K.knal(rnd(.15,.85),rnd(.12,.5),130);K.regen(true);iv=setInterval(()=>{G.vuur();setTimeout(()=>{if(!stop)K.knal(rnd(.12,.88),rnd(.1,.5),120)},800+G.vertraging()*1000)},900)}
     else{K.kanon(true,180);K.kanon(false,180);K.regen(true);iv=setInterval(()=>K.kanon(Math.random()<.5,90),2200)}
     st.querySelector('.sh-door').onclick=sluit;
   }catch(e){if(e!==0)throw e}}

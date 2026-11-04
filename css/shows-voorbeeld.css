@@ -121,3 +121,9 @@
 .vb-sectie{font-size:1.6rem;font-weight:800;margin:28px 0 12px}
 .vb-keuze{margin:0 0 16px}
 .vb-keuze .inp{min-width:280px;height:44px;font-weight:700}
+
+/* het getal staat er meteen bij de klap (eerst duurde het een halve seconde voordat je het zag) */
+.sh-num.pop{animation:sh-inslag .4s cubic-bezier(.1,.9,.3,1) both}
+.t-carnaval .sh-num.pop{animation:sh-stuiter .35s cubic-bezier(.3,1.5,.5,1) both}
+.t-arcade .sh-num.pop{animation:sh-inslag .3s steps(3) both}
+@keyframes sh-inslag{0%{transform:scale(1.7);opacity:.5}12%{opacity:1}100%{transform:scale(1);opacity:1}}
