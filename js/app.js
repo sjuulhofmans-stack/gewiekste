@@ -44,12 +44,12 @@ function nakijkenAan(){return cfg().nakijken===true}
 function mijnTabs(){return S.isOwner?TABS:TABS.filter(t=>t[0]==='vragen'||(t[0]==='nakijken'&&nakijkenAan()))}
 
 const S={config:null,teams:{},jokers:{},vragen:{},scores:{},seen:{},fresh:false,
-  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],online:[],dbOk:null,loadSlow:false,
+  isOwner:false,canWrite:true,backend:null,email:'',needLogin:false,noAccess:false,toegang:[],namen:[],naam:'',isBestuur:false,bestuur:{},aanm:[],online:[],chat:false,chatMsgs:[],dbOk:null,loadSlow:false,
   tab:'vragen',rid:null,vq:1,mode:'raster',team:null,confirm:null,pf:null};
 const dirty=new Set(), Q={};
 let db=null,VC={},subscribed=false;
 
-try{S.naam=localStorage.getItem('gg_naam')||'';S.rid=localStorage.getItem('gg_rid');S.uj=localStorage.getItem('gg_uj')||'met';}catch(e){}
+try{S.naam=localStorage.getItem('gg_naam')||'';S.chat=localStorage.getItem('gg_chat')==='1';S.rid=localStorage.getItem('gg_rid');S.uj=localStorage.getItem('gg_uj')||'met';}catch(e){}
 const h0=location.hash.slice(1); if([...TABS,...BTABS].some(t=>t[0]===h0))S.tab=h0;
 
 /* ---------- helpers ---------- */
@@ -166,7 +166,10 @@ function askConfirm(key){if(S.confirm===key){S.confirm=null;return true}S.confir
 // nakijktabel loopt door tot de onderkant van het scherm; alleen de tabel scrollt
 function fitGrid(){const g=$app.querySelector('.grid-wrap.nk');if(!g)return;
   const top=g.getBoundingClientRect().top+window.scrollY;g.style.maxHeight=Math.max(320,window.innerHeight-top-16)+'px'}
-window.addEventListener('resize',fitGrid);
+// chat loopt door tot de onderkant van het scherm; alleen de berichtenlijst scrollt
+function fitChat(){const c=$app.querySelector('.chat');if(!c)return;
+  const top=c.getBoundingClientRect().top+window.scrollY;c.style.height=Math.max(360,window.innerHeight-top-16)+'px'}
+window.addEventListener('resize',()=>{fitGrid();fitChat()});
 // naamkaartje bij muis op een teamkop (data-tip); staat buiten #app zodat de tabel het niet afknipt
 const $tip=document.createElement('div');$tip.id='tip';$tip.hidden=true;document.body.appendChild($tip);
 $app.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(!el){$tip.hidden=true;return}
@@ -178,10 +181,14 @@ let raf=0;function schedule(){if(raf)return;raf=requestAnimationFrame(()=>{raf=0
 function render(){VC={};
   const a=document.activeElement;let f=null;
   if(a&&a.id&&$app.contains(a))f={id:a.id,val:a.value,s:null,e:null,tag:a.tagName};
-  if(f&&f.tag==='INPUT'){try{f.s=a.selectionStart;f.e=a.selectionEnd}catch(e){}}
+  if(f&&(f.tag==='INPUT'||f.tag==='TEXTAREA')){try{f.s=a.selectionStart;f.e=a.selectionEnd}catch(e){}}
   const gw=$app.querySelector('.grid-wrap');const sc=gw?{l:gw.scrollLeft,t:gw.scrollTop}:null;
-  $app.innerHTML=html();fitGrid();
+  // chat: stond je onderaan, dan blijf je onderaan (nieuwe berichten in beeld); anders blijft de plek staan
+  const cl=document.getElementById('chat-list');const cs=cl?{t:cl.scrollTop,bodem:cl.scrollHeight-cl.scrollTop-cl.clientHeight<40}:null;
+  $app.innerHTML=html();fitGrid();fitChat();
+  document.body.classList.toggle('chat-open',!!$app.querySelector('.chat')); // meldingen dan links, niet over het typvak
   const gw2=$app.querySelector('.grid-wrap');if(gw2&&sc){gw2.scrollLeft=sc.l;gw2.scrollTop=sc.t}
+  const cl2=document.getElementById('chat-list');if(cl2)cl2.scrollTop=(!cs||cs.bodem)?cl2.scrollHeight:cs.t;
   if(S.pf){const el=document.getElementById(S.pf);S.pf=null;if(el)focusSel(el);return}
   if(f){const el=document.getElementById(f.id);if(el){
     if(dirty.has(f.id)&&el.value!==f.val)el.value=f.val;
@@ -285,7 +292,7 @@ function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som
   // "Eén antwoord" kan pas als er nog maar één antwoordregel over is
   const veel=v.regels.length>1;
   const RJ=rubJury(r);
-  let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}${RJ.length?`<span class="mut">Verantwoordelijk: <b>${RJ.map(esc).join(', ')}</b></span>`:''}</div><div class="vq-grid"><nav class="vq-nav" aria-label="Vragen">`;
+  let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}${RJ.length?`<span class="mut">Verantwoordelijk: <b>${RJ.map(esc).join(', ')}</b></span>`:''}<button class="btn chat-knop${S.chat?' primary':''}" data-act="chat" aria-pressed="${S.chat}">${S.chat?'Chat sluiten':'Open chat'}</button></div><div class="vq-grid${S.chat?' met-chat':''}"><nav class="vq-nav" aria-label="Vragen">`;
   V.forEach((x,i)=>{h+=`<button data-act="vq" data-q="${i+1}"${i+1===q?' aria-current="true"':''}><span class="nr">${pc}.${i+1}</span><span class="t">${x.titel?esc(x.titel):'Nog leeg'}</span><span class="p">${x.punten?x.punten+' pt':'–'}</span><span class="dot ${vraagStatus(x)[0]}" title="${vraagStatus(x)[1]}"></span></button>`});
   h+=`</nav><section class="vq-card"><div class="vq-top"><h2>Vraag ${pc}.${q}</h2>${v.soort==='creatief'?'<span class="badge joker">Creatief · jury</span>':''}<span class="badge ${st[0]}">${st[1]}</span></div>
     <label class="fld"><span>Titel van de vraag</span><input class="inp vq-titel" id="e_${r.id}_${q}_titel" data-act="vf" data-f="titel" ${base} value="${esc(v.titel)}" placeholder="Titel van de vraag of opdracht"${d}></label>
@@ -299,8 +306,22 @@ function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som
       <input class="inp" id="e_${r.id}_${q}_${g.id}_t" data-act="rf" data-f="tekst" data-k="${k}" ${base} value="${esc(g.tekst)}" placeholder="${v.soort==='creatief'?'Bijv. filmpje, tekening, creativiteit':'Het juiste antwoord'}" aria-label="Antwoord ${lab(v,k)}"${d}>
       <input class="inp num" id="e_${r.id}_${q}_${g.id}_p" data-act="rf" data-f="punten" data-k="${k}" ${base} inputmode="numeric" value="${g.punten||''}" placeholder="0" aria-label="Punten ${lab(v,k)}"${d}>
       <button class="ibtn${on?' danger':''}" data-act="del-regel" data-k="${k}" data-ck="${ck}" ${base} aria-label="Regel verwijderen"${d||(v.regels.length<2?' disabled':'')}>${on?'Zeker?':'✕'}</button></div>`});
-  h+=`</div><div class="vq-foot"><button class="btn" data-act="add-regel" ${base}${d}>+ Antwoordregel</button><button class="btn" data-act="verdeel" ${base}${d}>Verdeel ${v.punten||0} punten gelijk</button></div></section></div>`;
+  h+=`</div><div class="vq-foot"><button class="btn" data-act="add-regel" ${base}${d}>+ Antwoordregel</button><button class="btn" data-act="verdeel" ${base}${d}>Verdeel ${v.punten||0} punten gelijk</button></div></section>${S.chat?vChat():''}</div>`;
   return h}
+// chat naast de vragen: berichten blijven bewaard in chat/<id> met naam, tijd en tekst
+function mijnNaam(){return onlNaam||(S.isBestuur?S.naam:'')||S.email||'Beheerder'}
+function vChat(){const M=S.chatMsgs;const ik=mijnNaam();
+  return `<aside class="chat" aria-label="Chat"><div class="chat-kop"><h3>Chat</h3><span class="mut">Berichten blijven bewaard</span></div>
+  <div class="chat-list" id="chat-list" aria-live="polite">${M.length?M.map(m=>`<div class="cmsg${m.naam===ik?' mij':''}"><div class="cmeta"><b>${esc(m.naam)}</b><span>${esc(tijdTxt(m.tijd))}</span></div><div class="ctekst">${esc(m.tekst)}</div></div>`).join(''):'<p class="mut chat-leeg">Nog geen berichten. Stuur hieronder het eerste bericht.</p>'}</div>
+  <div class="chat-in"><textarea class="inp" id="chat-in" rows="2" maxlength="1000" placeholder="Typ een bericht… (Enter = versturen)" aria-label="Bericht"></textarea><button class="btn primary" data-act="chat-stuur">Versturen</button></div></aside>`}
+let chatSub=false;
+function volgChat(){if(chatSub||!db)return;chatSub=true;
+  db.collection('chat').onSnapshot(qs=>{S.chatMsgs=qs.docs.map(d=>d.data()).filter(m=>m&&m.tekst).sort((a,b)=>a.tijd-b.tijd);schedule()},
+    e=>{chatSub=false;if(e&&e.code==='permission-denied')toast('De chat kan nog niet geladen worden. Vraag de beheerder om de nieuwe beveiligingsregels in Firebase te zetten.',true)})}
+function stuurChat(){const el=document.getElementById('chat-in');if(!el)return;const t=el.value.trim();if(!t)return;
+  el.value='';dirty.delete('chat-in');const p='chat/'+Date.now()+'-'+Math.random().toString(36).slice(2,7);
+  const cl=document.getElementById('chat-list');if(cl)cl.scrollTop=cl.scrollHeight;
+  enqueue(p,()=>db.doc(p).set({naam:mijnNaam(),tijd:Date.now(),tekst:t}))}
 
 /* ---------- Overzicht & uitslag ---------- */
 // gecentreerd; de naamkolom groeit mee met de langste teamnaam, de rubriekkolommen blijven even breed (lange rubrieknamen worden afgekapt)
@@ -540,6 +561,7 @@ function curVraag(rid,q){return clone(vragen(rid)[q-1])}
 
 $app.addEventListener('input',e=>{const el=e.target;if(el.id)dirty.add(el.id)});
 $app.addEventListener('keydown',e=>{const el=e.target;
+  if(el.id==='chat-in'&&e.key==='Enter'&&!e.shiftKey){e.preventDefault();stuurChat();return}
   if(el.dataset.act==='score'&&['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)&&!e.shiftKey&&!e.ctrlKey&&!e.altKey){
     e.preventDefault();const nx=arrowScoreInput(el,e.key);if(!nx)return;const ok=commitScore(el);
     if(ok){S.pf=nx.id;if(!raf)focusSel(nx)}return}
@@ -584,6 +606,8 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
         :c==='auth/weak-password'?'Dit wachtwoord is te zwak. Kies een langer wachtwoord.':'Instellen lukte niet: '+((e&&(e.message||c))||'onbekende fout'),true)});return}
   if(a==='tab'){S.tab=el.dataset.tab;try{history.replaceState(null,'','#'+S.tab)}catch(x){}render();window.scrollTo(0,0);return}
   if(a==='vq'){S.vq=+el.dataset.q;render();window.scrollTo(0,0);return}
+  if(a==='chat'){S.chat=!S.chat;store('gg_chat',S.chat?'1':'0');if(S.chat)volgChat();render();if(S.chat){const c=document.getElementById('chat-in');if(c)c.focus({preventScroll:true})}return}
+  if(a==='chat-stuur'){stuurChat();return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
   if(a==='winnaar'){toonWinnaar();return}
   if(a==='nk-aan'){const c=clone(cfg());c.nakijken=el.dataset.v==='aan';saveConfig(c);toast(c.nakijken?'Nakijken staat aan: het bestuur ziet nu het tabblad Nakijken.':'Nakijken staat uit: het bestuur ziet alleen Vragen & antwoorden.');return}
@@ -614,7 +638,7 @@ let scoreSub=null;
 function volgScores(){if(!db)return;const mag=S.isOwner||nakijkenAan();
   if(mag&&!scoreSub)scoreSub=db.collection('scores').onSnapshot(qs=>{const o={};qs.docs.forEach(d=>{o[d.id]=d.data()});S.scores=o;schedule()},()=>{scoreSub=null});
   else if(!mag&&scoreSub){scoreSub();scoreSub=null;S.scores={}}}
-function subscribe(){if(subscribed)return;subscribed=true;
+function subscribe(){if(subscribed)return;subscribed=true;if(S.chat)volgChat();
   const err=e=>{if(e&&e.code==='permission-denied'){S.noAccess=true;S.canWrite=false}else S.loadSlow=true;schedule()};
   db.doc('beheer/config').onSnapshot(s=>{const d=s.exists?s.data():null;S.config=d&&Array.isArray(d.rubrieken)?metOverig(d):null;VC={};if(!s.metadata.fromCache)gotFresh();volgScores();schedule()},err);
   db.doc('beheer/teams').onSnapshot(s=>{S.teams=(s.exists&&s.data().teams)||{};schedule()},err);

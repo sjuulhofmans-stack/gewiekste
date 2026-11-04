@@ -13,6 +13,8 @@ rules_version = '2';
 // - De namenlijst voor het inlogscherm (publiek/bestuur) mag iedereen lezen.
 // - Wie er heeft ingelogd (aanmeldingen) ziet alleen de beheerder.
 // - Wie er nu online is (online) zien alle bestuursleden.
+// - De chat (chat) kunnen alle bestuursleden lezen en aanvullen; berichten blijven
+//   staan. Alleen de beheerder kan berichten verwijderen.
 // - Iedereen anders mag niets.
 
 service cloud.firestore {
@@ -59,6 +61,16 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly(['naam', 'tijd'])
         && request.resource.data.naam is string && request.resource.data.naam.size() < 80
         && request.resource.data.tijd is number;
+    }
+    match /chat/{id} {
+      allow read: if isBestuur();
+      allow create: if isBestuur()
+        && request.resource.data.keys().hasOnly(['naam', 'tijd', 'tekst'])
+        && request.resource.data.naam is string && request.resource.data.naam.size() < 80
+        && request.resource.data.tekst is string && request.resource.data.tekst.size() > 0
+        && request.resource.data.tekst.size() <= 1000
+        && request.resource.data.tijd is number;
+      allow delete: if isBeheerder();
     }
     match /vragen/{rubriek} {
       allow read, write: if isBestuur();
