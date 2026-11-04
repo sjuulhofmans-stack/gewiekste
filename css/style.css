@@ -73,6 +73,13 @@ button,select,input,textarea{font:inherit;color:inherit}
 .online{display:inline-flex;align-items:center;gap:7px;font-size:.9rem;font-weight:700;cursor:default}
 .odot{width:10px;height:10px;border-radius:50%;background:var(--good);box-shadow:0 0 0 3px color-mix(in srgb,var(--good) 30%,transparent)}
 .role{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:5px 10px;border-radius:999px;border:1px solid color-mix(in srgb,var(--night-ink) 35%,transparent)}
+/* account: rond knopje met beginletter, met daaronder een klein venster (rol, naam/e-mail, uitloggen) */
+.acc-wrap{position:relative}
+.acc{width:44px;height:44px;border-radius:50%;border:2px solid color-mix(in srgb,var(--night-ink) 40%,transparent);background:var(--accent);color:var(--accent-ink);font-family:var(--font-display);font-weight:800;font-size:1.15rem;cursor:pointer;display:grid;place-items:center}
+.acc:hover,.acc[aria-expanded="true"]{border-color:var(--night-ink)}
+.acc-menu{position:absolute;right:0;top:calc(100% + 8px);z-index:30;min-width:240px;max-width:min(320px,calc(100vw - 32px));display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:12px;background:var(--surface);color:var(--ink);border:1px solid var(--line);box-shadow:0 12px 30px color-mix(in srgb,var(--night) 45%,transparent)}
+.acc-menu .role{align-self:flex-start;border-color:var(--line);color:var(--ink-2)}
+.acc-wie{font-weight:700;overflow-wrap:anywhere}
 /* tabbladen als losse knoppen; het actieve tabblad is licht gevuld */
 .tabs{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .tab{border:1px solid color-mix(in srgb,var(--night-ink) 28%,transparent);background:color-mix(in srgb,var(--night-ink) 8%,transparent);color:var(--night-ink);font-weight:700;padding:9px 16px;border-radius:9px;cursor:pointer;min-height:44px}

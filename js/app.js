@@ -213,8 +213,15 @@ function header(){const c=cfg();
   const role=S.backend==='lokaal'?'Lokaal testen':S.isOwner?'Beheerder':(S.dbOk&&S.canWrite?'Bestuurslid':'Alleen lezen');
   const tb=([k,l],lock)=>`<button class="tab" data-act="tab" data-tab="${k}"${S.tab===k?' aria-current="page"':''}>${lock?'<span class="lock" aria-hidden="true">🔒</span>':''}${l}</button>`;
   return `<header class="band"><div class="wrap top"><div class="brand">${OWL}<div><h1>${esc(c.naam||'Genneps Gewiekste')}</h1><p>${esc(c.editie||'')}${c.editie?' · ':''}Uitslagen &amp; nakijken</p></div></div>
-  <div class="head-r"><div class="top-right">${onlineTxt()}<span class="role">${role}</span>${S.email?`<span class="who" title="Ingelogd">${esc(S.isBestuur?(S.naam||'Bestuur'):S.email)}</span><button class="btn ghost" data-act="logout">Uitloggen</button>`:''}</div>
+  <div class="head-r"><div class="top-right">${onlineTxt()}${account(role)}</div>
   ${S.needLogin?'':`<nav class="tabs" aria-label="Onderdelen">`}${S.needLogin?'':mijnTabs().map(t=>tb(t)).join('')}${S.isOwner?'<span class="tabsep" aria-hidden="true"></span>'+BTABS.map(t=>tb(t,1)).join(''):''}${S.needLogin?'':'</nav>'}</div></div></header>`}
+// account: een rondje met je beginletter; klik erop voor je rol, naam of e-mail en uitloggen
+function account(role){if(S.needLogin)return'';const wie=S.isBestuur?(S.naam||'Bestuur'):S.email;const open=!!S.accOpen;
+  return `<div class="acc-wrap"><button class="acc" data-act="acc" aria-expanded="${open}" aria-label="Account" title="Account">${esc((wie||'?').trim().charAt(0).toUpperCase()||'?')}</button>
+  ${open?`<div class="acc-menu"><span class="role">${role}</span>${wie?`<div class="acc-wie">${esc(wie)}</div>`:''}${S.email?'<button class="btn" data-act="logout">Uitloggen</button>':''}</div>`:''}</div>`}
+// het accountvenster gaat dicht bij een klik ergens anders of met Esc
+document.addEventListener('click',e=>{if(S.accOpen&&!e.target.closest('.acc-wrap')){S.accOpen=false;schedule()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&S.accOpen){S.accOpen=false;schedule()}});
 // vaste meldingen als [sleutel, soort, tekst]; getoond als kaartje rechtsonder
 function notices(){const h=[];
   if(S.backend==='lokaal')h.push(['lokaal','info','<b>Lokaal testen.</b> Firebase is nog niet ingesteld (js/firebase-config.js). Alles wordt alleen in deze browser bewaard.']);
@@ -695,6 +702,7 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
 });
 $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el||el.disabled)return;const a=el.dataset.act;
   if(a==='login'){const p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});firebase.auth().signInWithPopup(p).catch(e=>{if(e&&e.code!=='auth/popup-closed-by-user')toast('Inloggen lukte niet: '+(e.message||e.code),true)});return}
+  if(a==='acc'){S.accOpen=!S.accOpen;render();return}
   if(a==='logout'){firebase.auth().signOut().then(()=>location.reload());return}
   if(a==='login-bestuur'){loginBestuur();return}
   if(a==='jk'){const j=clone(S.jokers);const nr=el.dataset.nr;if(j[nr]===el.dataset.r)delete j[nr];else j[nr]=el.dataset.r;saveJokers(j);return}
