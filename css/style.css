@@ -251,7 +251,11 @@ col.wsp{width:28px}
 .panel .pad{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
 .lrow{display:grid;grid-template-columns:64px minmax(0,1fr) 76px;gap:10px;align-items:center;height:var(--rowT);padding-right:12px;border-top:1px solid var(--line)}
 .lrow:not(.lhead):nth-child(even of .lrow:not(.lhead)){background:var(--zebra)} /* om en om een andere kleur */
-.lrow.jk{grid-template-columns:64px 240px minmax(0,1fr)}
+.lrow.jk{grid-template-columns:64px 240px minmax(0,1fr) 56px}
+/* jokers: rechts een vinkje (joker ingevuld) of een kruisje (nog niet) */
+.jchk{justify-self:center;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:1.1rem}
+.jchk.ok{background:var(--good-soft);color:var(--good)}
+.jchk.nee{background:var(--bad-soft);color:var(--bad)}
 /* jokers: alle rubrieken als even grote pillen; de gekozen pil is paars gevuld */
 .jpills{display:grid;grid-template-columns:repeat(var(--nj,10),minmax(0,1fr));gap:6px}
 .jpill{height:38px;min-width:0;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;border-radius:999px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);cursor:pointer;font-size:.9rem}
@@ -412,7 +416,8 @@ body.chat-open #meldingen{right:auto;left:max(16px,env(safe-area-inset-left,0px)
   .ibtn{width:64px}
   .efoot{padding-left:12px}
   .lrow{grid-template-columns:44px minmax(0,1fr) 64px}
-  .lrow.jk{grid-template-columns:44px minmax(0,1fr);height:auto;padding-block:8px}
+  .lrow.jk{grid-template-columns:44px minmax(0,1fr) 44px;height:auto;padding-block:8px}
+  .lrow.jk .jchk{grid-row:1;grid-column:3}
   .lrow.jk .jpills{grid-column:1/-1;grid-template-columns:repeat(5,minmax(0,1fr))}
   .lrow.jk.lhead{display:none}
   .jpill span{display:none}

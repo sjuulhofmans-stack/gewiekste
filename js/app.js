@@ -617,9 +617,9 @@ function vJokers(){const T=teams();const N=rubs().filter(r=>r.soort==='normaal')
   let h=`<div class="rhead"><div><h2>Jokers</h2><p class="mut">Elk team zet vóór de kwis één joker in. De score van die rubriek telt dubbel. Niet mogelijk op de sponsorrubriek, de geheime opdracht en Overige.</p></div><span class="badge ${n===T.length&&T.length?'ok':'warn'}">${n} van ${T.length} teams hebben een joker</span></div>`;
   if(!T.length)return h+empty('Nog geen teams','Maak eerst de teams aan onder Teams.');
   // elke rubriek een even grote pil achter de teamnaam; klik = joker zetten, nog eens klikken = joker weg
-  h+=`<div class="panel" style="--nj:${N.length}"><div class="lrow jk lhead"><span style="text-align:center">Nr</span><span>Team</span><span>Joker op rubriek · klik nog eens om de joker weg te halen</span></div>`;
+  h+=`<div class="panel" style="--nj:${N.length}"><div class="lrow jk lhead"><span style="text-align:center">Nr</span><span>Team</span><span>Joker op rubriek · klik nog eens om de joker weg te halen</span><span style="text-align:center">Klaar</span></div>`;
   T.forEach(t=>{const cur=jokerOf(t.nr)||'';
-    h+=`<div class="lrow jk"><span class="ln">${t.nr}</span><span class="qa" title="${esc(t.naam)}">${t.naam?esc(t.naam):'<i>Geen naam</i>'}</span><div class="jpills" role="group" aria-label="Joker team ${t.nr}">${N.map(r=>`<button class="jpill" data-act="jk" data-nr="${t.nr}" data-r="${r.id}" aria-pressed="${r.id===cur}" title="${code(r)} · ${esc(r.naam)}"><b>${code(r)}</b><span>${esc(r.naam)}</span></button>`).join('')}</div></div>`});
+    h+=`<div class="lrow jk"><span class="ln">${t.nr}</span><span class="qa" title="${esc(t.naam)}">${t.naam?esc(t.naam):'<i>Geen naam</i>'}</span><div class="jpills" role="group" aria-label="Joker team ${t.nr}">${N.map(r=>`<button class="jpill" data-act="jk" data-nr="${t.nr}" data-r="${r.id}" aria-pressed="${r.id===cur}" title="${code(r)} · ${esc(r.naam)}"><b>${code(r)}</b><span>${esc(r.naam)}</span></button>`).join('')}</div>${cur?'<span class="jchk ok" role="img" aria-label="Joker ingevuld" title="Joker ingevuld">✓</span>':'<span class="jchk nee" role="img" aria-label="Nog geen joker" title="Nog geen joker">✗</span>'}</div>`});
   return h+'</div>'}
 function vInst(){const c=cfg();const R=rubs();
   const nk=nakijkenAan();
