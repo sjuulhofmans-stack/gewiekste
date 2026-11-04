@@ -167,11 +167,12 @@ function askConfirm(key){if(S.confirm===key){S.confirm=null;return true}S.confir
 // nakijktabel loopt door tot de onderkant van het scherm; alleen de tabel scrollt
 function fitGrid(){const g=$app.querySelector('.grid-wrap.nk');if(!g)return;
   const top=g.getBoundingClientRect().top+window.scrollY;g.style.maxHeight=Math.max(320,window.innerHeight-top-16)+'px';
-  // breedte van de vraagkolom hier uitrekenen (in pixels), zodat de kolom zelf en de vaste kolommen ernaast
-  // (Punten en de blauwe streep) precies dezelfde maat gebruiken en bij opzij scrollen blijven staan
+  // breedte van de vraagkolom en de hele tabel hier uitrekenen (in pixels), zodat de kolommen precies die maat
+  // houden (lange vraagtitels maken de tabel niet breder) en Punten en de blauwe streep bij opzij scrollen blijven staan
   const t=g.querySelector('table.grid.nk');if(!t)return;const cs=getComputedStyle(g),px=k=>parseFloat(cs.getPropertyValue(k))||0;
-  const w2=Math.max(px('--w2min'),g.clientWidth-px('--w1')-px('--w3')-28-t.querySelectorAll('col.wt').length*px('--wt')-1);
-  t.style.setProperty('--w2',Math.floor(w2)+'px')}
+  const vast=px('--w1')+px('--w3')+28+t.querySelectorAll('col.wt').length*px('--wt');
+  const w2=Math.floor(Math.max(px('--w2min'),g.clientWidth-vast-1));
+  t.style.setProperty('--w2',w2+'px');t.style.width=(vast+w2)+'px'}
 // chat loopt door tot de onderkant van het scherm; alleen de berichtenlijst scrollt
 function fitChat(){const c=$app.querySelector('.chat');if(!c)return;
   const top=c.getBoundingClientRect().top+window.scrollY;c.style.height=Math.max(360,window.innerHeight-top-16)+'px'}
