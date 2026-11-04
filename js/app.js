@@ -169,7 +169,15 @@ function fitGrid(){const g=$app.querySelector('.grid-wrap.nk');if(!g)return;
 // chat loopt door tot de onderkant van het scherm; alleen de berichtenlijst scrollt
 function fitChat(){const c=$app.querySelector('.chat');if(!c)return;
   const top=c.getBoundingClientRect().top+window.scrollY;c.style.height=Math.max(360,window.innerHeight-top-16)+'px'}
-window.addEventListener('resize',()=>{fitGrid();fitChat()});
+// uitslag nog dicht: de knop staat midden in het scherm
+function fitGate(){const g=$app.querySelector('.gate');if(!g)return;
+  const top=g.getBoundingClientRect().top+window.scrollY;g.style.minHeight=Math.max(420,window.innerHeight-top-24)+'px'}
+window.addEventListener('resize',()=>{fitGrid();fitChat();fitGate()});
+// draaiende blauwe achtergrond met schijnwerpers achter de hele pagina zolang de uitslag dicht is;
+// staat buiten #app zodat de beweging niet bij elke update opnieuw begint
+const $podium=document.createElement('div');$podium.id='podium';$podium.setAttribute('aria-hidden','true');
+$podium.innerHTML='<div class="pd-bg"></div><div class="pd-vig"></div><span class="pd-spot l"></span><span class="pd-spot r"></span>';
+document.body.prepend($podium);
 // naamkaartje bij muis op een teamkop (data-tip); staat buiten #app zodat de tabel het niet afknipt
 const $tip=document.createElement('div');$tip.id='tip';$tip.hidden=true;document.body.appendChild($tip);
 $app.addEventListener('mouseover',e=>{const el=e.target.closest('[data-tip]');if(!el){$tip.hidden=true;return}
@@ -185,7 +193,8 @@ function render(){VC={};
   const gw=$app.querySelector('.grid-wrap');const sc=gw?{l:gw.scrollLeft,t:gw.scrollTop}:null;
   // chat: stond je onderaan, dan blijf je onderaan (nieuwe berichten in beeld); anders blijft de plek staan
   const cl=document.getElementById('chat-list');const cs=cl?{t:cl.scrollTop,bodem:cl.scrollHeight-cl.scrollTop-cl.clientHeight<40}:null;
-  $app.innerHTML=html();fitGrid();fitChat();
+  $app.innerHTML=html();fitGrid();fitChat();fitGate();
+  document.body.classList.toggle('gate-open',!!$app.querySelector('.gate'));
   document.body.classList.toggle('chat-open',!!$app.querySelector('.chat')); // meldingen dan links, niet over het typvak
   const gw2=$app.querySelector('.grid-wrap');if(gw2&&sc){gw2.scrollLeft=sc.l;gw2.scrollTop=sc.t}
   const cl2=document.getElementById('chat-list');if(cl2)cl2.scrollTop=(!cs||cs.bodem)?cl2.scrollHeight:cs.t;
@@ -340,7 +349,9 @@ function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   const pct=all?Math.round(filled/all*100):0;
   const nm=x=>esc(x.naam||'Team '+x.nr);
   // eerst dicht: alleen de beheerder kan de winnaar onthullen, daarna ziet iedereen de tabel
-  if(!cfg().onthuld)return `<div class="gate">${OWL}<h2>Wie wordt de winnaar?</h2>${S.isOwner?`<p>Klaar met nakijken? Zet het scherm groot en druk op de knop.</p>${pct<100?`<p class="gate-let">Let op: nog niet alles is nagekeken (${pct}%).</p>`:''}<button class="btn primary huge" data-act="winnaar">🏆 Toon de winnaar!</button>`:'<p>De uitslag wordt straks samen bekendgemaakt. Even geduld…</p>'}</div>`;
+  // in het midden van het scherm; de draaiende achtergrond en schijnwerpers staan in #podium (buiten #app)
+  const c=cfg();
+  if(!c.onthuld)return `<div class="gate">${OWL}<div class="gate-kop">${esc(c.naam||'Genneps Gewiekste')}${c.editie?' · '+esc(c.editie):''}</div><h2>Wie wordt de winnaar?</h2>${S.isOwner?`<p>Klaar met nakijken? Druk op de knop. Het scherm gaat vanzelf groot.</p>${pct<100?`<p class="gate-let">Let op: nog niet alles is nagekeken (${pct}%).</p>`:''}<button class="btn primary huge" data-act="winnaar">Toon de winnaar!</button>`:'<p>De uitslag wordt straks samen bekendgemaakt. Even geduld…</p>'}</div>`;
   let notes='';for(let i=0;i<Math.min(3,L.length-1);i++){const a=L[i],b=L[i+1];
     if(a.tot===b.tot){if(a.crea!==b.crea)notes+=`<div class="notice">${nm(a)} en ${nm(b)} hebben allebei ${a.tot} punten. Beslist op de creatieve opdrachten: ${a.crea} tegen ${b.crea}.</div>`;
       else notes+=`<div class="notice bad">${nm(a)} en ${nm(b)} staan precies gelijk, ook op de creatieve opdrachten (${a.crea}). Het bestuur moet zelf beslissen.</div>`}}
@@ -350,7 +361,7 @@ function vUitslag(){const zj=S.uj==='zonder';const L=ranking(zj);
   <thead><tr><th>Plaats</th><th class="tl">Team</th><th>Punten</th></tr></thead><tbody>`;
   L.forEach(x=>{h+=`<tr><td><b>${x.place}</b></td><td class="tl" title="${nm(x)}">${nm(x)}</td><td><b>${x.tot}</b></td></tr>`});
   h+='</tbody></table></div>';
-  if(S.isOwner)h+=`<div class="toolbar"><button class="btn" data-act="winnaar">🏆 Winnaar nog een keer tonen</button><button class="btn" data-act="verberg">Uitslag weer verbergen</button></div>`;
+  if(S.isOwner)h+=`<div class="toolbar"><button class="btn" data-act="winnaar">Winnaar nog een keer tonen</button><button class="btn" data-act="verberg">Uitslag weer verbergen</button></div>`;
   return h+'</div>'}
 
 /* ---------- Statistieken ---------- */
@@ -609,7 +620,8 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
   if(a==='chat'){S.chat=!S.chat;store('gg_chat',S.chat?'1':'0');if(S.chat)volgChat();render();if(S.chat){const c=document.getElementById('chat-in');if(c)c.focus({preventScroll:true})}return}
   if(a==='chat-stuur'){stuurChat();return}
   if(a==='uj'){S.uj=el.dataset.m;store('gg_uj',S.uj);render();return}
-  if(a==='winnaar'){toonWinnaar();return}
+  // scherm vanzelf groot (mag alleen direct na een klik), daarna de show
+  if(a==='winnaar'){const d=document.documentElement;if(!document.fullscreenElement&&d.requestFullscreen)d.requestFullscreen().catch(()=>{});toonWinnaar();return}
   if(a==='nk-aan'){const c=clone(cfg());c.nakijken=el.dataset.v==='aan';saveConfig(c);toast(c.nakijken?'Nakijken staat aan: het bestuur ziet nu het tabblad Nakijken.':'Nakijken staat uit: het bestuur ziet alleen Vragen & antwoorden.');return}
   if(a==='verberg'){const c=clone(cfg());c.onthuld=false;saveConfig(c);toast('De uitslag is weer verborgen.');return}
   if(a==='add-regel'){const rid=el.dataset.rid,q=+el.dataset.q;const o=curVraag(rid,q);const id=newId();o.regels.push({id,tekst:'',punten:0});
