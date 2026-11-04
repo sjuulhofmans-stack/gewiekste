@@ -141,7 +141,6 @@ col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{w
 .grid:not(.nk) tbody tr:nth-child(even) td{background:var(--zebra)}
 .grid td.jc,.grid:not(.nk) tbody tr:nth-child(even) td.jc{background:var(--joker-soft);color:var(--joker);font-weight:700}
 .grid tfoot td{position:sticky;bottom:0;z-index:3;background:var(--accent-soft);font-weight:700;border-top:2px solid var(--ink-2)}
-.grid tfoot tr.jrow td{bottom:0;background:var(--joker-soft);color:var(--joker)}
 .grid tfoot tr.trow td{bottom:var(--row)}
 .grid tfoot tr.trow.solo td{bottom:0}
 .grid tfoot .stk{z-index:6}
@@ -168,7 +167,6 @@ col.wsp{width:28px}
 .grid.nk td.v-zero{background:var(--nk-bad)}
 .grid.nk td.v-part{background:var(--nk-part)}
 .grid.nk tfoot td{background:var(--nk-tot);color:var(--nk-tot-ink);border-top-color:var(--nk-head)}
-.grid.nk tfoot tr.jrow td{background:var(--nk-joker-soft);color:var(--nk-joker)}
 .grid.nk .gi:focus{background:var(--nk-cell)}
 #tip{position:fixed;z-index:60;max-width:320px;background:var(--night);color:var(--night-ink);border:1px solid var(--line-strong);padding:8px 12px;border-radius:8px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.3);pointer-events:none}
 .grid.nk th.ct{cursor:default}

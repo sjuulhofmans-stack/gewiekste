@@ -257,7 +257,7 @@ function scoreInput(pre,r,t,v,g,jl,extra){const x=raw(r.id,t.nr,g.id);
   const id=`${pre}_${r.id}_${t.nr}_${g.id}${jl?'_j'+jl.i:''}`;
   return `<input class="${extra}" id="${id}" data-act="score" data-rid="${r.id}" data-nr="${t.nr}" data-rg="${g.id}"${jl?` data-j="${esc(jl.k)}" placeholder="${esc(jl.kort)}" title="${esc(jl.l)}"`:''} data-max="${g.punten}" inputmode="numeric" autocomplete="off" value="${val}" aria-label="Team ${t.nr}, ${esc(g.tekst||v.titel||'regel')}${jl?', '+esc(jl.l):''}"${dis()}>`}
 
-function raster(r,T){const V=vragen(r.id);const isN=r.soort==='normaal';const pc=code(r);
+function raster(r,T){const V=vragen(r.id);const pc=code(r);
   // smalle blauwe kolom die vast blijft staan, als scheiding tussen de vragen en de teams
   const SP='<td class="stk c4 sp" aria-hidden="true"></td>';
   let h=`<div class="grid-wrap nk nk-${S.nkm}"><table class="grid nk" style="--nt:${T.length}"><colgroup><col class="w1"><col class="w2"><col class="w3"><col class="wsp">${T.map(()=>'<col class="wt">').join('')}</colgroup>
@@ -272,9 +272,8 @@ function raster(r,T){const V=vragen(r.id);const isN=r.soort==='normaal';const pc
         h+=`<tr><td class="stk c1">${L}</td><td class="stk c2 tl" title="${esc(g.tekst)}">${g.tekst?esc(g.tekst):'<i>Antwoord nog niet ingevuld</i>'}</td><td class="stk c3">${g.punten}</td>${SP}${T.map(t=>{const w=waarde(r.id,t.nr,v,g);return `<td class="${cls(w,g.punten)}">${scoreInput('s',r,t,v,g,0,'gi')}</td>`}).join('')}</tr>`;
       }});
   });
-  const anyJ=isN&&T.some(t=>jokerOf(t.nr)===r.id);
-  h+=`</tbody><tfoot><tr class="trow${anyJ?'':' solo'}"><td class="stk c1"></td><td class="stk c2 tl">Totaal rubriek</td><td class="stk c3">${r.max}</td>${SP}${T.map(t=>`<td>${rubTot(r.id,t.nr)}</td>`).join('')}</tr>`;
-  if(anyJ)h+=`<tr class="jrow"><td class="stk c1">★</td><td class="stk c2 tl">Met joker (×2)</td><td class="stk c3"></td>${SP}${T.map(t=>`<td>${jokerOf(t.nr)===r.id?rubTot(r.id,t.nr)*2:''}</td>`).join('')}</tr>`;
+  // de joker zie je aan het sterretje in de teamkop; geen aparte jokerregel onderin
+  h+=`</tbody><tfoot><tr class="trow solo"><td class="stk c1"></td><td class="stk c2 tl">Totaal rubriek</td><td class="stk c3">${r.max}</td>${SP}${T.map(t=>`<td>${rubTot(r.id,t.nr)}</td>`).join('')}</tr>`;
   return h+'</tfoot></table></div>'}
 
 
