@@ -281,14 +281,16 @@ function vqJury(r,v,q,base,d){const eigen=Array.isArray(v.juryleden);const N=jur
 // vraag voor vraag: links de lijst met vragen, rechts één vraag om in te vullen
 function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som=V.reduce((s,v)=>s+v.punten,0);const max=+r.max||1000;const pc=code(r);const d=dis();
   const q=Math.max(1,Math.min(V.length,S.vq||1));const v=V[q-1];const base=`data-rid="${r.id}" data-q="${q}"`;const st=vraagStatus(v);
-  const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l])=>`<option value="${k}"${k===cur?' selected':''}>${l}</option>`).join('')}</select>`;
+  const sel=(f,opts,cur)=>`<select class="inp" id="e_${r.id}_${q}_${f}" data-act="vf" data-f="${f}" ${base}${d}>${opts.map(([k,l,off])=>`<option value="${k}"${k===cur?' selected':''}${off?' disabled':''}>${l}</option>`).join('')}</select>`;
+  // "Eén antwoord" kan pas als er nog maar één antwoordregel over is
+  const veel=v.regels.length>1;
   const RJ=rubJury(r);
   let h=`<div class="toolbar">${rubSelect()}${somBadge(som,max)}${RJ.length?`<span class="mut">Verantwoordelijk: <b>${RJ.map(esc).join(', ')}</b></span>`:''}</div><div class="vq-grid"><nav class="vq-nav" aria-label="Vragen">`;
   V.forEach((x,i)=>{h+=`<button data-act="vq" data-q="${i+1}"${i+1===q?' aria-current="true"':''}><span class="nr">${pc}.${i+1}</span><span class="t">${x.titel?esc(x.titel):'Nog leeg'}</span><span class="p">${x.punten?x.punten+' pt':'–'}</span><span class="dot ${vraagStatus(x)[0]}" title="${vraagStatus(x)[1]}"></span></button>`});
   h+=`</nav><section class="vq-card"><div class="vq-top"><h2>Vraag ${pc}.${q}</h2>${v.soort==='creatief'?'<span class="badge joker">Creatief · jury</span>':''}<span class="badge ${st[0]}">${st[1]}</span></div>
     <label class="fld"><span>Titel van de vraag</span><input class="inp vq-titel" id="e_${r.id}_${q}_titel" data-act="vf" data-f="titel" ${base} value="${esc(v.titel)}" placeholder="Titel van de vraag of opdracht"${d}></label>
     <div class="vq-set"><label class="fld"><span>Nakijken</span>${sel('soort',[['antwoord','Goed / fout (antwoorden)'],['creatief','Creatief (jury)']],v.soort)}</label>
-    <label class="fld"><span>Nummering</span>${sel('nummering',[['enkel','Eén antwoord'],['abc','A  B  C'],['123','1  2  3']],v.nummering)}</label>
+    <label class="fld"><span>Nummering</span>${sel('nummering',[['enkel',veel?'Eén antwoord (eerst antwoorden weghalen)':'Eén antwoord',veel],['abc','A  B  C'],['123','1  2  3']],v.nummering)}</label>
     <label class="fld"><span>Punten vraag</span><input class="inp num" id="e_${r.id}_${q}_punten" data-act="vf" data-f="punten" ${base} inputmode="numeric" value="${v.punten||''}" placeholder="0"${d}></label></div>
     ${v.soort==='creatief'?vqJury(r,v,q,base,d):''}
     <div class="vq-ans"><div class="vq-ah"><span></span><span>${v.soort==='creatief'?'Wat wordt beoordeeld':'Juiste antwoord'}</span><span>Punten</span><span></span></div>`;
@@ -553,6 +555,7 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
   if(a==='ln-naam'){S.naam=v;return}
   if(a==='rub'){S.rid=v;S.vq=1;store('gg_rid',v);render();return}
   if(a==='vf'){const q=+el.dataset.q,rid=el.dataset.rid;const o=curVraag(rid,q);const f=el.dataset.f;
+    if(f==='nummering'&&v==='enkel'&&o.regels.length>1){el.value=o.nummering;toast('Haal eerst de antwoorden weg die te veel zijn. Daarna kun je "Eén antwoord" kiezen.',true);return}
     if(f==='punten')o.punten=num(v);else o[f]=v;saveVraag(rid,q,o);return}
   if(a==='rf'){const q=+el.dataset.q,rid=el.dataset.rid,k=+el.dataset.k;const o=curVraag(rid,q);if(!o.regels[k])return;
     if(el.dataset.f==='punten')o.regels[k].punten=num(v);else o.regels[k].tekst=v;saveVraag(rid,q,o);return}
