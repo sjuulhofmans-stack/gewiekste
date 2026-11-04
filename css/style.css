@@ -235,6 +235,11 @@ col.wsp{width:28px}
 /* één gecentreerde tabel met daarboven de keuze met/zonder joker */
 .uitslag{display:flex;flex-direction:column;align-items:center;gap:14px}
 .uitslag .notice{width:min(100%,560px)}
+/* totaaloverzicht: tabel in het midden, teamnamen helemaal zichtbaar */
+.grid-wrap.ov{width:fit-content;max-width:100%;margin-inline:auto}
+.grid.ov{table-layout:auto}
+.grid.ov .tl{overflow:visible;text-overflow:clip;min-width:200px}
+.grid.ov .tnm{max-width:72px;margin-inline:auto}
 .uitslag .grid-wrap{max-height:none;min-height:0;max-width:100%}
 col.wu{width:360px}
 

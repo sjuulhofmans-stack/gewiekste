@@ -302,11 +302,11 @@ function vVragen(){ensureRid();const r=rub(S.rid);const V=vragen(r.id);const som
   return h}
 
 /* ---------- Overzicht & uitslag ---------- */
-// vaste tabelbreedte, zodat alle rubriekkolommen even breed blijven (lange rubrieknamen worden afgekapt)
+// gecentreerd; de naamkolom groeit mee met de langste teamnaam, de rubriekkolommen blijven even breed (lange rubrieknamen worden afgekapt)
 function vOverzicht(){const T=teams();const R=rubs();
   if(!T.length)return empty('Nog geen teams','Zodra er teams zijn, zie je hier per team de punten van elke rubriek.');
   let h=`<div class="rhead"><div><h2>Totaaloverzicht</h2><p class="mut">Punten per team per rubriek, op teamnummer</p></div><div class="legend"><span class="badge joker">★ Joker: score ×2</span></div></div>
-  <div class="grid-wrap"><table class="grid" style="width:calc(var(--w1) + 200px + ${R.length+1} * 76px)"><colgroup><col class="w1"><col class="wn">${R.map(()=>'<col class="wr">').join('')}<col class="wr"></colgroup>
+  <div class="grid-wrap ov"><table class="grid ov"><colgroup><col class="w1"><col class="wn">${R.map(()=>'<col class="wr">').join('')}<col class="wr"></colgroup>
   <thead><tr><th class="stk c1">Team</th><th class="stk tl" style="left:var(--w1)">Naam</th>${R.map(r=>`<th title="${esc(r.naam)}">${code(r)}<span class="tnm">${esc(r.naam)}</span></th>`).join('')}<th>Totaal</th></tr></thead><tbody>`;
   T.forEach(t=>{const jk=jokerOf(t.nr);
     h+=`<tr><td class="stk c1"><b>${t.nr}</b></td><td class="stk tl" style="left:var(--w1)" title="${esc(t.naam)}">${esc(t.naam)}</td>${R.map(r=>{const s=rubTot(r.id,t.nr);return jk===r.id?`<td class="jc" title="Joker: ${s} × 2">★ ${s*2}</td>`:`<td>${s}</td>`}).join('')}<td><b>${teamTot(t.nr)}</b></td></tr>`});
