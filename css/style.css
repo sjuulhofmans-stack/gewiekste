@@ -29,6 +29,7 @@ body{margin:0}
   --nk-good:#CDEBD8; --nk-bad:#F4D3D3; --nk-part:#F8E6BB; --nk-joker:#7446BF; --nk-joker-soft:#ECE3F8;
   --font-display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
   --font-body:"Atkinson Hyperlegible","Segoe UI",system-ui,-apple-system,sans-serif;
+  --font-num:"Figtree","Segoe UI",system-ui,sans-serif; /* cijfers in tabellen: gewone ronde nul, alle cijfers even breed */
   --row:40px; --rowT:52px;
   --w1:64px; --w2:330px; --w2min:330px; --w3:84px; --wt:68px;
 }
@@ -135,6 +136,8 @@ textarea.inp{height:auto;padding:10px;resize:vertical;line-height:1.4}
 /* raster (spreadsheet) */
 .grid-wrap{overflow:auto;max-height:calc(100vh - 260px);min-height:320px;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
 table.grid{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-variant-numeric:tabular-nums}
+/* cijfers in de tabellen (niet de namen en titels) in het cijferlettertype */
+.grid td:not(.tl),.grid .tn,.gi,.inp.num,.inp.sc{font-family:var(--font-num);font-variant-numeric:tabular-nums;font-weight:600}
 col.w1{width:var(--w1)} col.w2{width:var(--w2)} col.w3{width:var(--w3)} col.wt{width:var(--wt)} col.wn{width:200px} col.wr{width:76px}
 .grid th,.grid td{height:var(--row);padding:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;background:var(--surface)}
 .grid .tl{text-align:left;padding:0 10px}
