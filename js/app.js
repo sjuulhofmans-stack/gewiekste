@@ -641,11 +641,42 @@ function vInst(){const c=cfg();const R=rubs();
     <input class="inp num" id="rv_${r.id}" data-act="rb" data-f="vragen" data-i="${i}" inputmode="numeric" value="${r.vragen}" aria-label="Aantal vragen"><input class="inp num" id="rm_${r.id}" data-act="rb" data-f="max" data-i="${i}" inputmode="numeric" value="${r.max}" aria-label="Maximaal aantal punten">
     ${r.soort==='normaal'?`<button class="ibtn${on?' danger':''}" data-act="rb-del" data-i="${i}" data-ck="${ck}" aria-label="Rubriek verwijderen">${on?'Zeker?':'✕'}</button>`:'<span></span>'}</div>`});
   h+=`<div class="efoot" style="padding-left:12px"><button class="btn" data-act="rb-add">+ Rubriek toevoegen</button><span class="mut">Een verwijderde rubriek verdwijnt uit de uitslag. Ingevulde punten blijven bewaard.</span></div></div>`;
+  h+=vAntwoordbladen();
   // verantwoordelijken per rubriek; zij zijn ook de jury van de creatieve opdrachten in die rubriek
   h+=`<div class="panel"><h3>Verantwoordelijken en jury per rubriek</h3><div class="pad"><p class="mut" style="margin:0">Kies per rubriek wie er verantwoordelijk is. Zij zijn ook de jury van de creatieve opdrachten in die rubriek. Bij een opdracht kun je de jury nog aanpassen.${(S.namen||[]).length?'':' Vul eerst de namen van de bestuursleden in bij Toegang bestuur.'}</p></div>
   <div class="lrow rj lhead"><span style="text-align:center">#</span><span class="qa">Rubriek</span><span>Verantwoordelijk / jury</span><span></span></div>`;
   R.forEach((r,i)=>{h+=`<div class="lrow rj"><span class="ln">${code(r)}</span><span class="qa" title="${esc(r.naam)}">${esc(r.naam)}</span>${juryKies(rubJury(r),'rbj',`data-i="${i}"`,'','rj_'+r.id)}</div>`});
   return h+'</div>'}
+
+/* ---------- Antwoordbladen (pdf) ---------- */
+// alleen de sponsorrubriek en de gewone rubrieken; de geheime opdracht en Overige hebben geen antwoordblad
+const abRubs=()=>rubs().filter(r=>r.soort==='sponsor'||r.soort==='normaal');
+const PDFMAAT={b:160,h:245}; // standaard: binnenkant van het kader in het kwisboek, in mm
+function pdfMaat(){const c=cfg();return{b:Math.max(80,Math.min(420,+c.pdfB||PDFMAAT.b)),h:Math.max(80,Math.min(600,+c.pdfH||PDFMAAT.h))}}
+function vAntwoordbladen(){const R=abRubs();const m=pdfMaat();const G=(window.GGAntwoordblad||{}).GRIJS||'#C8C8C8';
+  let h=`<div class="panel"><h3>Antwoordbladen (pdf)</h3><div class="pad">
+    <p class="mut" style="margin:0"><b>Leeg</b> = voor in het kwisboek, precies zo groot als het kader hieronder, met bovenaan elke bladzijde vakken voor teamnaam en teamnummer. <b>Met antwoorden</b> = A4 met de juiste antwoorden, om op de website te zetten. Vragen die nog helemaal leeg zijn, komen er niet op.</p>
+    <div class="formgrid"><label class="fld"><span>Breedte kader (mm)</span><input class="inp num" id="c_pdfB" data-act="pdfmaat" data-f="pdfB" inputmode="numeric" value="${m.b}"></label>
+    <label class="fld"><span>Hoogte kader (mm)</span><input class="inp num" id="c_pdfH" data-act="pdfmaat" data-f="pdfH" inputmode="numeric" value="${m.h}"></label></div>
+    <div class="toolbar ab-alles"><b>Alle rubrieken in 1 pdf:</b><button class="btn primary" data-act="ab-pdf" data-r="alles" data-in="0">Leeg</button><button class="btn" data-act="ab-pdf" data-r="alles" data-in="1">Met antwoorden</button></div>
+  </div><div class="lrow ab lhead"><span style="text-align:center">#</span><span>Rubriek</span><span>Kleur op het antwoordblad</span><span>Pdf van deze rubriek</span></div>`;
+  R.forEach(r=>{const i=rubs().indexOf(r);const k=r.kleur||'';
+    h+=`<div class="lrow ab"><span class="ln">${code(r)}</span><span class="qa" title="${esc(r.naam)}">${esc(r.naam)}</span>
+    <div class="ab-kleur"><input type="color" id="rk_${r.id}" data-act="rb-kleur" data-i="${i}" value="${esc(k||G)}" aria-label="Kleur rubriek ${code(r)}"><span class="mut">${k?'':'Grijs (standaard)'}</span>${k?`<button class="btn" data-act="rb-kleur-weg" data-i="${i}">Terug naar grijs</button>`:''}</div>
+    <div class="ab-knop"><button class="btn" data-act="ab-pdf" data-r="${r.id}" data-in="0">Leeg</button><button class="btn" data-act="ab-pdf" data-r="${r.id}" data-in="1">Met antwoorden</button></div></div>`});
+  return h+'</div>'}
+function abData(r){return{code:code(r),naam:r.naam,kleur:r.kleur||'',
+  vragen:vragen(r.id).map((v,i)=>({v,i})).filter(x=>vraagStatus(x.v)[0]!=='leeg').map(({v,i})=>({nr:code(r)+'.'+(i+1),titel:v.titel,creatief:v.soort==='creatief',
+    regels:v.regels.map((g,k)=>({label:lab(v,k),tekst:g.tekst}))}))}}
+let abBezig=false;
+async function maakAntwoordblad(wat,ingevuld){if(abBezig)return;const A=window.GGAntwoordblad;
+  const R=wat==='alles'?abRubs():[rub(wat)].filter(Boolean);if(!R.length){toast('Er zijn nog geen rubrieken.',true);return}
+  const naam=(wat==='alles'?'Antwoordbladen alle rubrieken':'Antwoordblad rubriek '+code(R[0])+' - '+R[0].naam)+(ingevuld?' (met antwoorden)':' (leeg)');
+  abBezig=true;toast('Het pdf wordt gemaakt…');
+  try{await A.laad();A.maak({rubrieken:R.map(abData),ingevuld,formaat:ingevuld?null:pdfMaat(),bestand:naam.replace(/[\\/:*?"<>|]/g,'')+'.pdf'});
+    toast('Het pdf staat bij je downloads.')}
+  catch(e){console.error(e);toast('Het pdf maken lukte niet. Controleer je internetverbinding en probeer het opnieuw.',true)}
+  finally{abBezig=false}}
 
 const tijdTxt=t=>new Date(t).toLocaleString('nl-NL',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
 function vToegang(){const B=S.bestuur||{};const A=(S.aanm||[]).slice().sort((a,b)=>b.tijd-a.tijd).slice(0,50);
@@ -708,6 +739,10 @@ $app.addEventListener('change',e=>{const el=e.target;const a=el.dataset.act;if(!
     if(!N.includes(v))r.juryleden=[...N,v];saveConfig(c);return}
   if(a==='team-naam'){const t=clone(S.teams);t[el.dataset.nr]=v.trim();saveTeams(t);return}
   if(a==='cfg'){const c=clone(cfg());c[el.dataset.f]=el.dataset.f==='jury'?+v:v;saveConfig(c);return}
+  if(a==='rb-kleur'){const c=clone(cfg());const r=c.rubrieken[+el.dataset.i];if(!r||!/^#[0-9a-f]{6}$/i.test(v))return;r.kleur=v.toUpperCase();saveConfig(c);return}
+  if(a==='pdfmaat'){const c=clone(cfg());const f=el.dataset.f;const n=num(v);
+    if(n<80||n>(f==='pdfB'?420:600)){toast('Vul een maat in millimeters in, tussen 80 en '+(f==='pdfB'?420:600)+'.',true);el.value=pdfMaat()[f==='pdfB'?'b':'h'];return}
+    c[f]=n;saveConfig(c);return}
   if(a==='rb'){const c=clone(cfg());const r=c.rubrieken[+el.dataset.i];if(!r)return;const f=el.dataset.f;
     if(f==='naam')r.naam=v.trim()||r.naam;else if(f==='vragen')r.vragen=Math.max(1,Math.min(20,num(v)||1));else r.max=Math.max(1,num(v)||1000);saveConfig(c);return}
 });
@@ -751,6 +786,8 @@ $app.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el
     const t=clone(S.teams);let nr=Math.max(0,...Object.keys(t).map(Number));for(const n of names){if(nr>=99)break;t[++nr]=n}dirty.delete('bulk');ta.value='';saveTeams(t);toast(names.length+' teams toegevoegd.');return}
   if(a==='rb-add'){const c=clone(cfg());let k=1;while(c.rubrieken.some(r=>r.id==='r'+k))k++;const gi=c.rubrieken.findIndex(r=>VAST[r.soort]);
     const nr={id:'r'+k,naam:'Nieuwe rubriek',soort:'normaal',vragen:7,max:1000};if(gi<0)c.rubrieken.push(nr);else c.rubrieken.splice(gi,0,nr);S.pf='rn_'+nr.id;saveConfig(c);return}
+  if(a==='rb-kleur-weg'){const c=clone(cfg());const r=c.rubrieken[+el.dataset.i];if(!r)return;delete r.kleur;saveConfig(c);return}
+  if(a==='ab-pdf'){maakAntwoordblad(el.dataset.r,el.dataset.in==='1');return}
   if(a==='rb-del'){if(!askConfirm(el.dataset.ck))return;const c=clone(cfg());c.rubrieken.splice(+el.dataset.i,1);saveConfig(c);return}
 });
 window.addEventListener('hashchange',()=>{const h=location.hash.slice(1);if([...TABS,...BTABS].some(t=>t[0]===h)){S.tab=h;render()}});

@@ -266,6 +266,12 @@ col.wsp{width:28px}
 .jpill:hover{border-color:var(--joker);background:var(--joker-soft)}
 .jpill[aria-pressed="true"]{background:var(--joker);border-color:var(--joker);color:var(--surface);font-weight:700}
 .lrow.rb{grid-template-columns:64px minmax(0,1fr) 150px 96px 110px 76px}
+/* antwoordbladen: kleur per rubriek en downloadknoppen */
+.lrow.ab{grid-template-columns:64px minmax(0,1fr) 300px 270px}
+.ab-kleur,.ab-knop{display:flex;align-items:center;gap:8px;min-width:0}
+.ab-kleur .mut{text-transform:none;letter-spacing:0}
+.ab-kleur input[type=color]{width:56px;height:40px;padding:2px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);cursor:pointer;flex:none}
+.ab-alles{margin:0}
 /* verantwoordelijken / jury: gekozen namen als kaartjes met kruisje, ernaast het uitklapmenu */
 .lrow.rj{grid-template-columns:64px minmax(0,220px) minmax(0,1fr) 240px}
 .chips{display:flex;gap:6px;align-items:center;overflow-x:auto;white-space:nowrap;min-width:0}
@@ -428,6 +434,9 @@ body.chat-open #meldingen{right:auto;left:max(16px,env(safe-area-inset-left,0px)
   .lrow.rb .soort{display:none}
   .lrow.rj{grid-template-columns:36px minmax(0,1fr) 150px}
   .lrow.rj .qa{display:none}
+  .lrow.ab{grid-template-columns:36px minmax(0,1fr);height:auto;padding-block:8px}
+  .lrow.ab.lhead{display:none}
+  .lrow.ab .ab-kleur,.lrow.ab .ab-knop{grid-column:2;flex-wrap:wrap}
   .jrow{grid-template-columns:minmax(0,1fr) 150px}
   .cols2,.formgrid{grid-template-columns:1fr}
   col.wu{width:200px}
